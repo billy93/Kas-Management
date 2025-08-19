@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: kasapp-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: kasapp
+      POSTGRES_USER: kasapp_user
+      POSTGRES_PASSWORD: kasapp_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - kasapp-network
+
+  # Optional: pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: kasapp-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@kasapp.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+    networks:
+      - kasapp-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  kasapp-network:
+    driver: bridge

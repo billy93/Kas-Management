@@ -1,0 +1,206 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String?
+  image         String?
+  emailVerified DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  memberships   Membership[]
+  transactions  Transaction[]
+  payments      Payment[]
+  memberLinks   UserMemberLink[]
+  auditLogs     AuditLog[]
+}
+
+model Organization {
+  id            String        @id @default(cuid())
+  name          String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  memberships   Membership[]
+  members       Member[]
+  duesConfigs   DuesConfig[]
+  transactions  Transaction[]
+  dues          Dues[] @relation("OrganizationDues")
+  auditLogs     AuditLog[]
+  userMemberLinks UserMemberLink[]
+}
+
+model Membership {
+  id              String        @id @default(cuid())
+  userId          String
+  organizationId  String
+  role            Role          @default(VIEWER)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  user            User          @relation(fields: [userId], references: [id])
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+
+  @@unique([userId, organizationId])
+}
+
+enum Role {
+  ADMIN
+  TREASURER
+  VIEWER
+}
+
+model Member {
+  id            String        @id @default(cuid())
+  organizationId String
+  fullName      String
+  email         String?
+  phone         String?
+  joinedAt      DateTime      @default(now())
+  isActive      Boolean       @default(true)
+  dues          Dues[]
+  payments      Payment[]
+  notes         String?
+  organization  Organization  @relation(fields: [organizationId], references: [id])
+  userLinks     UserMemberLink[]
+}
+
+model UserMemberLink {
+  id            String        @id @default(cuid())
+  userId        String
+  memberId      String
+  organizationId String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  user          User          @relation(fields: [userId], references: [id])
+  member        Member        @relation(fields: [memberId], references: [id])
+  organization  Organization  @relation(fields: [organizationId], references: [id])
+
+  @@unique([userId, memberId])
+  @@unique([userId, organizationId])
+}
+
+model DuesConfig {
+  id            String        @id @default(cuid())
+  organizationId String
+  amount        Int           // default dues amount
+  currency      String        @default("IDR")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  organization  Organization  @relation(fields: [organizationId], references: [id])
+}
+
+model Dues {
+  id            String    @id @default(cuid())
+  organizationId String
+  month         Int
+  year          Int
+  amount        Int
+  memberId      String
+  member        Member    @relation(fields: [memberId], references: [id])
+  status        DuesStatus @default(PENDING)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  payments      Payment[]
+  organization  Organization @relation("OrganizationDues", fields: [organizationId], references: [id])
+
+  @@unique([memberId, month, year], name: "memberId_month_year")
+}
+
+enum DuesStatus {
+  PENDING
+  PARTIAL
+  PAID
+}
+
+model Payment {
+  id            String    @id @default(cuid())
+  duesId        String
+  dues          Dues      @relation(fields: [duesId], references: [id])
+  memberId      String
+  member        Member    @relation(fields: [memberId], references: [id])
+  paidAt        DateTime  @default(now())
+  amount        Int
+  method        String?
+  note          String?
+  createdById   String?
+  createdBy     User?     @relation(fields: [createdById], references: [id])
+}
+
+model Transaction {
+  id            String    @id @default(cuid())
+  organizationId String
+  type          TxType
+  amount        Int
+  category      String?
+  occurredAt    DateTime  @default(now())
+  note          String?
+  createdById   String?
+  createdBy     User?     @relation(fields: [createdById], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  organization  Organization @relation(fields: [organizationId], references: [id])
+}
+
+enum TxType {
+  INCOME
+  EXPENSE
+}
+
+model AuditLog {
+  id            String    @id @default(cuid())
+  organizationId String
+  userId        String
+  action        String    // CREATE, UPDATE, DELETE, LOGIN, etc.
+  entityType    String    // Member, Payment, Transaction, etc.
+  entityId      String?
+  details       Json?     // Additional details about the action
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime  @default(now())
+  user          User      @relation(fields: [userId], references: [id])
+  organization  Organization @relation(fields: [organizationId], references: [id])
+}
+
+// NextAuth (Auth.js) core tables
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
