@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
     };
 
     // Use transaction to ensure data consistency
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx:any) => {
       // If mode is 'replace', clear existing data first
       if (mode === 'replace') {
         await tx.payment.deleteMany({ where: { dues: { organizationId } } });

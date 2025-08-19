@@ -49,8 +49,8 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    const transactionIncome = transactions.filter(t => t.type === "INCOME").reduce((a, t) => a + t.amount, 0);
-    const expense = transactions.filter(t => t.type === "EXPENSE").reduce((a, t) => a + t.amount, 0);
+    const transactionIncome = transactions.filter((t: any) => t.type === "INCOME").reduce((a: number, t: any) => a + t.amount, 0);
+    const expense = transactions.filter((t: any) => t.type === "EXPENSE").reduce((a: number, t: any) => a + t.amount, 0);
     
     // Get payments (dues income) for current year
     const currentYear = new Date().getFullYear();
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
         }
       }
     });
-    const paymentsIncome = payments.reduce((sum, payment) => sum + payment.amount, 0);
+    const paymentsIncome = payments.reduce((sum: number, payment: any) => sum + payment.amount, 0);
     
     // Total income = transaction income + payments income
     const income = transactionIncome + paymentsIncome;
@@ -102,8 +102,8 @@ export async function GET(request: NextRequest) {
     });
 
     // Calculate total unpaid amount
-    const totalUnpaidAmount = unpaidDues.reduce((total, dues) => {
-      const totalPaid = dues.payments.reduce((sum, payment) => sum + payment.amount, 0);
+    const totalUnpaidAmount = unpaidDues.reduce((total: number, dues: any) => {
+      const totalPaid = dues.payments.reduce((sum: number, payment: any) => sum + payment.amount, 0);
       const remainingAmount = dues.amount - totalPaid;
       return total + (remainingAmount > 0 ? remainingAmount : 0);
     }, 0);

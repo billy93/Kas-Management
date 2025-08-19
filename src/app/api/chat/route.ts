@@ -234,9 +234,6 @@ Remember: You must ALWAYS provide a visible text response that users can read. N
     
     // Return the streaming response with detailed logging
     return result.toDataStreamResponse({
-      onError: (error) => {
-        console.error('❌ DataStream error:', error);
-      },
       getErrorMessage: (error) => {
         console.error('❌ Error message:', error);
         return 'Terjadi kesalahan dalam memproses permintaan.';
@@ -244,7 +241,10 @@ Remember: You must ALWAYS provide a visible text response that users can read. N
     });
   } catch (error) {
     console.error('❌ Error in chat API:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error', details: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: 'Internal server error', 
+      details: error instanceof Error ? error.message : 'Unknown error' 
+    }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
