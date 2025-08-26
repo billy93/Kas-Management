@@ -423,7 +423,7 @@ export default function MasterDataPage() {
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Nama</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Deskripsi</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Email</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Member</th>
+                    {/* <th className="text-left py-3 px-4 font-medium text-gray-700">Member</th> */}
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Dibuat</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Aksi</th>
                   </tr>
@@ -443,7 +443,7 @@ export default function MasterDataPage() {
                       <td className="py-3 px-4 text-gray-600">
                         {org.email || '-'}
                       </td>
-                      <td className="py-3 px-4">
+                      {/* <td className="py-3 px-4">
                         <div className="flex space-x-2">
                           <button
                             onClick={() => handleViewMembers(org)}
@@ -457,19 +457,20 @@ export default function MasterDataPage() {
                           >
                             ➕ Assign
                           </button>
+                        </div>
+                      </td> */}
+                      <td className="py-3 px-4 text-gray-600">
+                        {new Date(org.createdAt).toLocaleDateString('id-ID')}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex space-x-2">
+                          
                           <button
                             onClick={() => handleDuesConfig(org)}
                             className="px-2 py-1 bg-orange-500 hover:bg-orange-600 text-white rounded text-xs transition-colors duration-200"
                           >
                             💰 Iuran
                           </button>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-gray-600">
-                        {new Date(org.createdAt).toLocaleDateString('id-ID')}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex space-x-2">
                           <button
                             onClick={() => handleEdit(org)}
                             className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm transition-colors duration-200"
