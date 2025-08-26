@@ -8,7 +8,7 @@ const ImportMemberSchema = z.object({
   organizationId: z.string(),
   members: z.array(z.object({
     fullName: z.string().min(1),
-    email: z.string().email().optional(),
+    email: z.union([z.string().email(), z.literal('')]).optional(),
     phone: z.string().optional(),
     notes: z.string().optional(),
   }))
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
         // Check for duplicate by email or name in the same organization
         let existingMember = null;
         
-        if (memberData.email) {
+        if (memberData.email && memberData.email.trim() !== '') {
           existingMember = await prisma.member.findFirst({
             where: {
               organizationId,
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
           results.duplicates.push({
             row: i + 1,
             member: memberData,
-            reason: `Member with ${memberData.email ? 'email' : 'name'} already exists`
+            reason: `Member with ${(memberData.email && memberData.email.trim() !== '') ? 'email' : 'name'} already exists`
           });
           continue;
         }
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
           data: {
             organizationId,
             fullName: memberData.fullName,
-            email: memberData.email || null,
+            email: (memberData.email && memberData.email.trim() !== '') ? memberData.email : null,
             phone: memberData.phone || null,
             notes: memberData.notes || null,
           }

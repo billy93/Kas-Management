@@ -126,9 +126,16 @@ export default function ImportMemberModal({
       const result = await response.json();
 
       if (response.ok) {
-        setImportResult(result);
+        // Transform API response to match expected format
+        const transformedResult = {
+          success: result.results?.success?.length || 0,
+          duplicates: result.results?.duplicates?.length || 0,
+          errors: result.results?.errors?.length || 0,
+          errorDetails: result.results?.errors?.map((err: any) => `Row ${err.row}: ${err.error}`) || []
+        };
+        setImportResult(transformedResult);
         setStep('result');
-        if (result.success > 0) {
+        if (transformedResult.success > 0) {
           onSuccess();
         }
       } else {
