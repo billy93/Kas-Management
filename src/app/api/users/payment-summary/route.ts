@@ -77,8 +77,8 @@ export async function GET(request: Request) {
     let paidDues = 0;
     let unpaidDues = 0;
 
-    allDues.forEach(due => {
-      const totalPaid = due.payments.reduce((sum, payment) => sum + payment.amount, 0);
+    allDues.forEach((due: any) => {
+      const totalPaid = due.payments.reduce((sum: number, payment: any) => sum + payment.amount, 0);
       const remaining = due.amount - totalPaid;
 
       if (remaining <= 0) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAuditLog, getRequestInfo, AUDIT_ACTIONS, ENTITY_TYPES } from '@/lib/audit';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/lib/authOptions';
 
 // Routes that should be audited
 const AUDITED_ROUTES = [
