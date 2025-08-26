@@ -8,6 +8,7 @@ import { requireRole } from "@/lib/rbac";
 const CreateUserSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1).optional(),
+  phoneNumber: z.string().optional(),
   organizationId: z.string(),
   role: z.enum(["ADMIN", "TREASURER", "VIEWER"]).default("VIEWER")
 });
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { email, name, organizationId, role } = parsed.data;
+    const { email, name, phoneNumber, organizationId, role } = parsed.data;
 
     // Check if user has admin access to the organization
     await requireRole(session.user.email, organizationId, ["ADMIN"]);
@@ -62,6 +63,7 @@ export async function POST(req: Request) {
         data: {
           email,
           name: name || null,
+          phoneNumber: phoneNumber || null,
           emailVerified: new Date() // Auto-verified for direct creation
         }
       });
@@ -72,7 +74,8 @@ export async function POST(req: Request) {
           where: { id: user.id },
           data: {
             emailVerified: new Date(),
-            name: name || user.name
+            name: name || user.name,
+            phoneNumber: phoneNumber || user.phoneNumber
           }
         });
       }

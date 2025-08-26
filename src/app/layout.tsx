@@ -6,6 +6,7 @@ import AuthSessionProvider from "@/components/SessionProvider";
 import { Metadata } from "next";
 import Sidebar from "@/components/Sidebar";
 import { OrganizationProvider } from "@/contexts/OrganizationContext";
+import MobileLayout from "@/components/MobileLayout";
 
 export const metadata: Metadata = {
   title: "Kas App",
@@ -24,22 +25,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-screen bg-gray-50 text-gray-900">
         <AuthSessionProvider session={session}>
           <OrganizationProvider>
-            {session ? (
-              // Layout with sidebar for authenticated users
-              <div className="flex h-screen">
-                <Sidebar session={session} />
-                <main className="flex-1 overflow-auto transition-all duration-300">
-                  <div className="p-6">
-                    {children}
-                  </div>
-                </main>
-              </div>
-            ) : (
-              // Full-screen layout for unauthenticated users
-              <main className="min-h-screen">
-                {children}
-              </main>
-            )}
+            <MobileLayout session={session}>
+              {children}
+            </MobileLayout>
           </OrganizationProvider>
         </AuthSessionProvider>
       </body>

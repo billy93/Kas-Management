@@ -23,15 +23,54 @@ interface CreateUserModalProps {
 function InviteModal({ isOpen, onClose, organizationName, organizationId, onInviteSent }: InviteModalProps) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [countryCode, setCountryCode] = useState("+62");
   const [role, setRole] = useState("VIEWER");
   const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const validatePhoneNumber = (phone: string, code: string) => {
+    if (!phone) return { isValid: true, formatted: null };
+    
+    // Remove all non-digit characters
+    const digits = phone.replace(/\D/g, '');
+    if (!digits) return { isValid: true, formatted: null };
+    
+    // Validate Indonesian phone number format
+    if (code === '+62') {
+      // Indonesian mobile numbers should start with 8 and be 9-12 digits
+      if (!/^8\d{8,11}$/.test(digits)) {
+        return { 
+          isValid: false, 
+          formatted: null,
+          error: 'Nomor telepon Indonesia harus dimulai dengan 8 dan memiliki 9-12 digit'
+        };
+      }
+    }
+    
+    return { isValid: true, formatted: code + digits };
+  };
+
+  const formatPhoneNumber = (phone: string, code: string) => {
+    const validation = validatePhoneNumber(phone, code);
+    return validation.formatted;
+  };
+
   const handleSendInvite = async () => {
     if (!email) return;
     
+    // Validate phone number
+    const phoneValidation = validatePhoneNumber(phoneNumber, countryCode);
+    if (!phoneValidation.isValid) {
+      setPhoneError(phoneValidation.error || 'Format nomor telepon tidak valid');
+      return;
+    }
+    setPhoneError('');
+    
     setLoading(true);
     try {
+      const formattedPhone = phoneValidation.formatted;
+      
       const response = await fetch('/api/onboarding/invite', {
         method: 'POST',
         headers: {
@@ -40,6 +79,7 @@ function InviteModal({ isOpen, onClose, organizationName, organizationId, onInvi
         body: JSON.stringify({
           email,
           name: name || undefined,
+          phoneNumber: formattedPhone,
           organizationId,
           role
         }),
@@ -51,6 +91,9 @@ function InviteModal({ isOpen, onClose, organizationName, organizationId, onInvi
         alert('Undangan berhasil dikirim!');
         setEmail("");
         setName("");
+        setPhoneNumber("");
+        setCountryCode("+62");
+        setPhoneError("");
         setRole("VIEWER");
         setShowPreview(false);
         onInviteSent();
@@ -111,6 +154,50 @@ function InviteModal({ isOpen, onClose, organizationName, organizationId, onInvi
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nomor Telepon (Opsional)
+            </label>
+            <div className="flex">
+              <select
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+              >
+                <option value="+62">🇮🇩 +62</option>
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+44">🇬🇧 +44</option>
+                <option value="+65">🇸🇬 +65</option>
+                <option value="+60">🇲🇾 +60</option>
+              </select>
+              <input
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className="flex-1 px-3 py-2 border border-l-0 border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="858xxxxxxxx"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Contoh: 858xxxxxxxx (tanpa 0 di depan)
+            </p>
+            {phoneError && (
+              <p className="text-xs text-red-500 mt-1">
+                {phoneError}
+              </p>
+            )}
+            {phoneError && (
+              <p className="text-xs text-red-500 mt-1">
+                {phoneError}
+              </p>
+            )}
+            {phoneError && (
+              <p className="text-xs text-red-500 mt-1">
+                {phoneError}
+              </p>
+            )}
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Role
             </label>
             <select
@@ -157,14 +244,37 @@ function InviteModal({ isOpen, onClose, organizationName, organizationId, onInvi
 function CreateUserModal({ isOpen, onClose, organizationName, organizationId, onUserCreated }: CreateUserModalProps) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [countryCode, setCountryCode] = useState("+62");
+  const [phoneError, setPhoneError] = useState("");
   const [role, setRole] = useState("VIEWER");
   const [loading, setLoading] = useState(false);
+
+  const formatPhoneNumber = (phone: string, code: string) => {
+    if (!phone) return null;
+    // Remove all non-digit characters
+    const digits = phone.replace(/\D/g, '');
+    if (!digits) return null;
+    
+    // Format with country code
+    return code + digits;
+  };
 
   const handleCreateUser = async () => {
     if (!email) return;
     
+    // Validate phone number
+    const phoneValidation = validatePhoneNumber(phoneNumber, countryCode);
+    if (!phoneValidation.isValid) {
+      setPhoneError(phoneValidation.error || 'Format nomor telepon tidak valid');
+      return;
+    }
+    setPhoneError('');
+    
     setLoading(true);
     try {
+      const formattedPhone = phoneValidation.formatted;
+      
       const response = await fetch('/api/users/create', {
         method: 'POST',
         headers: {
@@ -173,6 +283,7 @@ function CreateUserModal({ isOpen, onClose, organizationName, organizationId, on
         body: JSON.stringify({
           email,
           name: name || undefined,
+          phoneNumber: formattedPhone,
           organizationId,
           role
         }),
@@ -184,6 +295,9 @@ function CreateUserModal({ isOpen, onClose, organizationName, organizationId, on
         alert('User berhasil dibuat!');
         setEmail("");
         setName("");
+        setPhoneNumber("");
+        setCountryCode("+62");
+        setPhoneError("");
         setRole("VIEWER");
         onUserCreated();
         onClose();
@@ -239,6 +353,35 @@ function CreateUserModal({ isOpen, onClose, organizationName, organizationId, on
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Nama lengkap (opsional)"
             />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nomor Telepon
+            </label>
+            <div className="flex">
+              <select
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+              >
+                <option value="+62">🇮🇩 +62</option>
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+44">🇬🇧 +44</option>
+                <option value="+65">🇸🇬 +65</option>
+                <option value="+60">🇲🇾 +60</option>
+              </select>
+              <input
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className="flex-1 px-3 py-2 border border-l-0 border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="858xxxxxxxx"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Contoh: 858xxxxxxxx (tanpa 0 di depan)
+            </p>
           </div>
           
           <div>
@@ -304,6 +447,7 @@ interface User {
   id: string;
   name?: string;
   email: string;
+  phoneNumber?: string;
   emailVerified: boolean;
   createdAt: string;
   memberships?: {
@@ -396,6 +540,10 @@ function UserDetailModal({ user, isOpen, onClose }: UserDetailModalProps) {
               <p className="text-gray-900">{user.email}</p>
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700">Nomor Telepon</label>
+              <p className="text-gray-900">{user.phoneNumber || 'Tidak ada nomor telepon'}</p>
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700">Status Email</label>
               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                 user.emailVerified 
@@ -481,21 +629,65 @@ function UserDetailModal({ user, isOpen, onClose }: UserDetailModalProps) {
 function EditUserModal({ user, isOpen, onClose, onUserUpdated }: EditUserModalProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [countryCode, setCountryCode] = useState("+62");
+  const [phoneError, setPhoneError] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
       setName(user.name || "");
       setEmail(user.email);
+      setPhoneError("");
+      
+      // Parse existing phone number
+      if (user.phoneNumber) {
+        // Extract country code and number
+        const phoneMatch = user.phoneNumber.match(/^(\+\d{1,4})(\d+)$/);
+        if (phoneMatch) {
+          setCountryCode(phoneMatch[1]);
+          setPhoneNumber(phoneMatch[2]);
+        } else {
+          setPhoneNumber(user.phoneNumber);
+        }
+      } else {
+        setPhoneNumber("");
+        setCountryCode("+62");
+      }
     }
   }, [user]);
+
+  const formatPhoneNumber = (phone: string, code: string) => {
+    if (!phone) return null;
+    // Remove all non-digit characters
+    const digits = phone.replace(/\D/g, '');
+    if (!digits) return null;
+    
+    // Format with country code
+    return code + digits;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
+    // Validate phone number if provided
+    if (phoneNumber) {
+      const phoneValidation = validatePhoneNumber(phoneNumber, countryCode);
+      if (!phoneValidation.isValid) {
+        setPhoneError(phoneValidation.error || 'Format nomor telepon tidak valid');
+        return;
+      }
+      setPhoneError('');
+    } else {
+      setPhoneError('');
+    }
+
     setLoading(true);
     try {
+      const phoneValidation = phoneNumber ? validatePhoneNumber(phoneNumber, countryCode) : { formatted: null };
+      const formattedPhone = phoneValidation.formatted;
+      
       const response = await fetch(`/api/users/${user.id}`, {
         method: 'PUT',
         headers: {
@@ -504,6 +696,7 @@ function EditUserModal({ user, isOpen, onClose, onUserUpdated }: EditUserModalPr
         body: JSON.stringify({
           name: name.trim() || null,
           email: email.trim(),
+          phoneNumber: formattedPhone,
         }),
       });
 
@@ -568,6 +761,36 @@ function EditUserModal({ user, isOpen, onClose, onUserUpdated }: EditUserModalPr
               placeholder="Masukkan email user"
               required
             />
+          </div>
+
+          <div>
+            <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
+              Nomor Telepon
+            </label>
+            <div className="flex">
+              <select
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+              >
+                <option value="+62">🇮🇩 +62</option>
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+44">🇬🇧 +44</option>
+                <option value="+65">🇸🇬 +65</option>
+                <option value="+60">🇲🇾 +60</option>
+              </select>
+              <input
+                type="tel"
+                id="phoneNumber"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className="flex-1 px-3 py-2 border border-l-0 border-gray-300 rounded-r-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="858xxxxxxxx"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Contoh: 858xxxxxxxx (tanpa 0 di depan)
+            </p>
           </div>
 
           <div className="flex justify-end space-x-3 pt-4">
@@ -745,19 +968,19 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <h1 className="text-2xl font-bold">Users</h1>
-        <div className="flex space-x-3">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <button
             onClick={() => setIsCreateUserModalOpen(true)}
-            className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center space-x-2"
+            className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
           >
             <span>👤</span>
             <span>Tambah User</span>
           </button>
           <button
             onClick={() => setIsInviteModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center space-x-2"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
           >
             <span>📧</span>
             <span>Undang User</span>

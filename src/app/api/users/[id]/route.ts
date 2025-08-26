@@ -15,7 +15,7 @@ export async function PUT(
 
     const { id } = params;
     const body = await request.json();
-    const { name, email } = body;
+    const { name, email, phoneNumber } = body;
 
     // Validate input
     if (!name || !email) {
@@ -82,7 +82,8 @@ export async function PUT(
       where: { id },
       data: {
         name,
-        email
+        email,
+        phoneNumber: phoneNumber || null
       },
       include: {
         memberships: {

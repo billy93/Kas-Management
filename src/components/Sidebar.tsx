@@ -11,27 +11,16 @@ import { usePathname } from "next/navigation";
 
 interface SidebarProps {
   session: Session | null;
+  isMobileMenuOpen?: boolean;
+  onMobileMenuClose?: () => void;
 }
 
-export default function Sidebar({ session }: SidebarProps) {
+export default function Sidebar({ session, isMobileMenuOpen = false, onMobileMenuClose }: SidebarProps) {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const { userRole } = useOrganization();
   const pathname = usePathname();
 
-  // Update body class for sidebar
-  useEffect(() => {
-    if (typeof document !== 'undefined') {
-      // Add has-sidebar class when sidebar is mounted
-      document.body.classList.add('has-sidebar');
-    }
 
-    // Cleanup on unmount
-    return () => {
-      if (typeof document !== 'undefined') {
-        document.body.classList.remove('has-sidebar');
-      }
-    };
-  }, []);
 
   // Filter menu categories based on user role
   const getMenuCategories = () => {
@@ -101,16 +90,37 @@ export default function Sidebar({ session }: SidebarProps) {
 
   return (
     <>
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={onMobileMenuClose}
+        />
+      )}
+      
       {/* Sidebar */}
-      <div className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 shadow-lg z-40">
+      <div className={`fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${
+        isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+      } lg:translate-x-0`}>
         {/* Header */}
-        <div className="flex items-center justify-center p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <Link 
             href="/" 
             className="font-bold text-xl text-blue-600 hover:text-blue-700 transition-colors"
+            onClick={onMobileMenuClose}
           >
             💰 Kas App
           </Link>
+          
+          {/* Close button for mobile */}
+          <button
+            onClick={onMobileMenuClose}
+            className="lg:hidden p-1 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         {/* Navigation */}
@@ -126,6 +136,7 @@ export default function Sidebar({ session }: SidebarProps) {
                     ? 'bg-blue-100 text-blue-700 border-r-2 border-blue-500'
                     : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
                 }`}
+                onClick={onMobileMenuClose}
               >
                 <span className="text-lg">{item.icon}</span>
                 <span className="ml-3 font-medium">{item.label}</span>
@@ -170,6 +181,7 @@ export default function Sidebar({ session }: SidebarProps) {
                         ? 'bg-blue-100 text-blue-700 border-r-2 border-blue-500'
                         : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
                     }`}
+                    onClick={onMobileMenuClose}
                   >
                     <span className="text-lg">{item.icon}</span>
                     <span className="ml-3">{item.label}</span>

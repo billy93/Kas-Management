@@ -646,21 +646,21 @@ export default function DuesPage() {
   });
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Manajemen Iuran</h1>
-        <p className="text-gray-600">Pantau status pembayaran iuran anggota sepanjang tahun</p>
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Manajemen Iuran</h1>
+        <p className="text-sm sm:text-base text-gray-600">Pantau status pembayaran iuran anggota sepanjang tahun</p>
       </div>
 
       {/* Year Selector and Stats */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+      <div className="mb-4 sm:mb-6 flex flex-col gap-4">
         <div className="flex items-center gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tahun</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Tahun</label>
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {years.map(year => (
                 <option key={year} value={year}>{year}</option>
@@ -670,51 +670,51 @@ export default function DuesPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="flex gap-4">
-          <div className="bg-green-100 border border-green-200 rounded-lg px-4 py-2">
-            <div className="text-green-800 text-sm font-medium">Lunas</div>
-            <div className="text-green-900 text-xl font-bold">{stats.totalPaid}</div>
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+          <div className="bg-green-100 border border-green-200 rounded-lg px-2 sm:px-4 py-2">
+            <div className="text-green-800 text-xs sm:text-sm font-medium">Lunas</div>
+            <div className="text-green-900 text-lg sm:text-xl font-bold">{stats.totalPaid}</div>
           </div>
-          <div className="bg-yellow-100 border border-yellow-200 rounded-lg px-4 py-2">
-            <div className="text-yellow-800 text-sm font-medium">Sebagian</div>
-            <div className="text-yellow-900 text-xl font-bold">{stats.totalPartial}</div>
+          <div className="bg-yellow-100 border border-yellow-200 rounded-lg px-2 sm:px-4 py-2">
+            <div className="text-yellow-800 text-xs sm:text-sm font-medium">Sebagian</div>
+            <div className="text-yellow-900 text-lg sm:text-xl font-bold">{stats.totalPartial}</div>
           </div>
-          <div className="bg-red-100 border border-red-200 rounded-lg px-4 py-2">
-            <div className="text-red-800 text-sm font-medium">Belum Bayar</div>
-            <div className="text-red-900 text-xl font-bold">{stats.totalPending}</div>
+          <div className="bg-red-100 border border-red-200 rounded-lg px-2 sm:px-4 py-2">
+            <div className="text-red-800 text-xs sm:text-sm font-medium">Belum Bayar</div>
+            <div className="text-red-900 text-lg sm:text-xl font-bold">{stats.totalPending}</div>
           </div>
         </div>
       </div>
 
       {/* Legend */}
-      <div className="mb-6 bg-gray-50 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-gray-700 mb-2">Keterangan:</h3>
-        <div className="flex flex-wrap gap-4">
+      <div className="mb-4 sm:mb-6 bg-gray-50 rounded-lg p-3 sm:p-4">
+        <h3 className="text-xs sm:text-sm font-medium text-gray-700 mb-2">Keterangan:</h3>
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-green-500 rounded"></div>
-            <span className="text-sm text-gray-600">Lunas</span>
+            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded"></div>
+            <span className="text-xs sm:text-sm text-gray-600">Lunas</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-            <span className="text-sm text-gray-600">Sebagian</span>
+            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-500 rounded"></div>
+            <span className="text-xs sm:text-sm text-gray-600">Sebagian</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-red-500 rounded"></div>
-            <span className="text-sm text-gray-600">Belum Bayar</span>
+            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded"></div>
+            <span className="text-xs sm:text-sm text-gray-600">Belum Bayar</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-gray-300 rounded"></div>
-            <span className="text-sm text-gray-600">Tidak Ada Data</span>
+            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-300 rounded"></div>
+            <span className="text-xs sm:text-sm text-gray-600">Tidak Ada Data</span>
           </div>
         </div>
         <p className="text-xs text-gray-500 mt-2">Klik pada kotak merah atau kuning untuk mencatat pembayaran</p>
       </div>
 
       {/* Search Bar */}
-      <div className="mb-6">
-        <div className="relative max-w-md">
+      <div className="mb-4 sm:mb-6">
+        <div className="relative max-w-full sm:max-w-md">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
@@ -723,11 +723,11 @@ export default function DuesPage() {
             placeholder="Cari berdasarkan nama atau email anggota..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            className="block w-full pl-9 sm:pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
         {searchTerm && (
-          <p className="text-sm text-gray-600 mt-2">
+          <p className="text-xs sm:text-sm text-gray-600 mt-2">
             Menampilkan {filteredDuesStatuses.length} dari {duesStatuses.length} anggota
           </p>
         )}
@@ -745,15 +745,15 @@ export default function DuesPage() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
+                  <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 min-w-[120px] sm:min-w-[160px]">
                     Nama Anggota
                   </th>
                   {months.map(month => (
-                    <th key={month.value} className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px]">
+                    <th key={month.value} className="px-1 sm:px-2 py-2 sm:py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[50px] sm:min-w-[80px]">
                       {month.label}
                     </th>
                   ))}
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px] sm:min-w-[120px]">
                     Aksi
                   </th>
                 </tr>
@@ -774,19 +774,19 @@ export default function DuesPage() {
                   
                   return (
                     <tr key={member.memberId} className="hover:bg-gray-50">
-                      <td className="px-4 py-4 whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-200">
-                        <div className="text-sm font-medium text-gray-900">{member.member.fullName}</div>
-                        <div className="text-xs text-gray-500">{member.member.email}</div>
+                      <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap sticky left-0 bg-white z-10 border-r border-gray-200">
+                        <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">{member.member.fullName}</div>
+                        <div className="text-xs text-gray-500 truncate hidden sm:block">{member.member.email}</div>
                       </td>
                       {months.map(month => {
                         const monthStatus = member.monthlyStatus[month.value];
                         const status = monthStatus?.status || 'NO_DATA';
                         
                         return (
-                          <td key={month.value} className="px-2 py-4 text-center">
+                          <td key={month.value} className="px-1 sm:px-2 py-3 sm:py-4 text-center">
                             <button
                               onClick={() => handleCellClick(member, month.value)}
-                              className={`w-12 h-12 rounded-lg text-white text-xs font-medium transition-colors cursor-pointer ${
+                              className={`w-8 h-8 sm:w-12 sm:h-12 rounded-lg text-white text-xs font-medium transition-colors cursor-pointer ${
                                 getStatusColor(status)
                               }`}
                               title={`${month.fullLabel}: ${getStatusText(status)}${monthStatus ? ` - ${money(monthStatus.remainingAmount)} tersisa` : ''}`}
@@ -796,23 +796,25 @@ export default function DuesPage() {
                           </td>
                         );
                       })}
-                      <td className="px-4 py-4 text-center">
+                      <td className="px-2 sm:px-4 py-3 sm:py-4 text-center">
                         <div className="flex flex-col gap-1">
                           {hasUnpaidDues && (
                             <button
                               onClick={() => handleBulkPaymentClick(member)}
-                              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-1 sm:px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap"
                               title="Bayar beberapa bulan sekaligus"
                             >
-                              Bayar Sekaligus
+                              <span className="hidden sm:inline">Bayar Sekaligus</span>
+                              <span className="sm:hidden">Bayar</span>
                             </button>
                           )}
                           <button
                             onClick={() => handleBulkCreateDuesClick(member)}
-                            className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                            className="bg-purple-600 hover:bg-purple-700 text-white px-1 sm:px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap"
                             title="Kelola tagihan beberapa bulan sekaligus (buat/hapus)"
                           >
-                            Kelola Tagihan Sekaligus
+                            <span className="hidden sm:inline">Kelola Tagihan Sekaligus</span>
+                            <span className="sm:hidden">Kelola</span>
                           </button>
                         </div>
                       </td>

@@ -212,11 +212,11 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard Kas</h1>
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <h1 className="text-xl sm:text-2xl font-bold">Dashboard Kas</h1>
       
       {/* Financial Summary */}
-      <div className="grid md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card title="Pemasukan" value={money(income)} className="bg-green-50 border-green-200" />
         <Card title="Pengeluaran" value={money(expense)} className="bg-red-50 border-red-200" />
         <Card title="Saldo" value={money(balance)} className="bg-blue-50 border-blue-200" />
@@ -225,24 +225,24 @@ export default function Dashboard() {
 
       {/* Personal Arrears Section */}
       {personalUnpaidAmount > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 sm:p-6">
           <div className="flex items-center space-x-3">
             <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
               </div>
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-yellow-800">Tunggakan Pribadi Anda</h3>
-              <p className="text-yellow-700">
+              <h3 className="text-base sm:text-lg font-semibold text-yellow-800">Tunggakan Pribadi Anda</h3>
+              <p className="text-sm sm:text-base text-yellow-700">
                 Anda memiliki tunggakan sebesar <span className="font-bold">{money(personalUnpaidAmount)}</span> 
                 {personalUnpaidMonths > 0 && (
                   <span> untuk {personalUnpaidMonths} bulan yang belum dibayar</span>
                 )}
               </p>
-              <p className="text-sm text-yellow-600 mt-1">
+              <p className="text-xs sm:text-sm text-yellow-600 mt-1">
                 Silakan lakukan pembayaran melalui menu Pembayaran atau hubungi bendahara.
               </p>
             </div>
@@ -251,18 +251,18 @@ export default function Dashboard() {
       )}
 
       {personalUnpaidAmount === 0 && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 sm:p-6">
           <div className="flex items-center space-x-3">
             <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-green-500 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-green-800">Status Pembayaran Anda</h3>
-              <p className="text-green-700">
+              <h3 className="text-base sm:text-lg font-semibold text-green-800">Status Pembayaran Anda</h3>
+              <p className="text-sm sm:text-base text-green-700">
                 Selamat! Anda tidak memiliki tunggakan iuran.
               </p>
             </div>
@@ -271,15 +271,15 @@ export default function Dashboard() {
       )}
 
       {/* Charts Section */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Monthly Financial Trend */}
         <div className="bg-white rounded-xl border shadow-sm">
-          <div className="p-6 border-b">
-            <h2 className="text-xl font-semibold text-gray-900">Tren Keuangan Bulanan</h2>
-            <p className="text-sm text-gray-600 mt-1">Pemasukan, pengeluaran, dan saldo per bulan</p>
+          <div className="p-4 sm:p-6 border-b">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Tren Keuangan Bulanan</h2>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">Pemasukan, pengeluaran, dan saldo per bulan</p>
           </div>
-          <div className="p-6">
-            <ResponsiveContainer width="100%" height={300}>
+          <div className="p-4 sm:p-6">
+            <ResponsiveContainer width="100%" height={250}>
               <BarChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
@@ -294,12 +294,12 @@ export default function Dashboard() {
 
         {/* Category Breakdown */}
         <div className="bg-white rounded-xl border shadow-sm">
-          <div className="p-6 border-b">
-            <h2 className="text-xl font-semibold text-gray-900">Kategori Pengeluaran</h2>
-            <p className="text-sm text-gray-600 mt-1">Distribusi pengeluaran berdasarkan kategori</p>
+          <div className="p-4 sm:p-6 border-b">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Kategori Pengeluaran</h2>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">Distribusi pengeluaran berdasarkan kategori</p>
           </div>
-          <div className="p-6">
-            <ResponsiveContainer width="100%" height={300}>
+          <div className="p-4 sm:p-6">
+            <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie
                   data={categoryData}
@@ -330,14 +330,14 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Saldo & Tunggakan Trend */}
+      {/* Balance and Arrears Trend */}
       <div className="bg-white rounded-xl border shadow-sm">
-        <div className="p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">Tren Saldo & Tunggakan</h2>
-          <p className="text-sm text-gray-600 mt-1">Perkembangan saldo kas dan tunggakan iuran</p>
+        <div className="p-4 sm:p-6 border-b">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Tren Saldo & Tunggakan</h2>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">Perkembangan saldo dan tunggakan dari waktu ke waktu</p>
         </div>
-        <div className="p-6">
-          <ResponsiveContainer width="100%" height={300}>
+        <div className="p-4 sm:p-6">
+          <ResponsiveContainer width="100%" height={250}>
             <AreaChart data={trendData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
@@ -371,9 +371,9 @@ export default function Dashboard() {
 
 function Card({ title, value, className = "" }: { title: string; value: string; className?: string }) {
   return (
-    <div className={`rounded-xl border p-4 bg-white shadow-sm ${className}`}>
-      <div className="text-sm text-gray-600">{title}</div>
-      <div className="text-2xl font-semibold">{value}</div>
+    <div className={`rounded-xl border p-3 sm:p-4 bg-white shadow-sm ${className}`}>
+      <div className="text-xs sm:text-sm text-gray-600">{title}</div>
+      <div className="text-lg sm:text-2xl font-semibold break-words">{value}</div>
     </div>
   )
 }

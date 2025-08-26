@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
+import * as XLSX from 'xlsx';
 
 interface ImportResult {
   success: number;
@@ -46,17 +47,20 @@ export default function ImportMemberModal({
     setError('');
 
     try {
-      const text = await file.text();
-      const lines = text.split('\n').filter(line => line.trim());
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
       
-      if (lines.length < 2) {
+      if (jsonData.length < 2) {
         setError('File harus memiliki minimal header dan 1 baris data');
         setLoading(false);
         return;
       }
 
-      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-      const requiredHeaders = ['fullName', 'email'];
+      const headers = (jsonData[0] as string[]).map(h => h?.toString().trim() || '');
+      const requiredHeaders = ['fullName'];
       const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
       
       if (missingHeaders.length > 0) {
@@ -66,16 +70,16 @@ export default function ImportMemberModal({
       }
 
       const parsedMembers = [];
-      for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+      for (let i = 1; i < jsonData.length; i++) {
+        const values = jsonData[i] as any[];
         const member: any = {};
         
         headers.forEach((header, index) => {
-          member[header] = values[index] || '';
+          member[header] = values[index]?.toString().trim() || '';
         });
 
-        // Validate required fields
-        if (!member.fullName || !member.email) {
+        // Validate required fields - only fullName is required now
+        if (!member.fullName) {
           continue; // Skip invalid rows
         }
 
@@ -83,6 +87,7 @@ export default function ImportMemberModal({
         member.joinDate = member.joinDate || new Date().toISOString().split('T')[0];
         member.phone = member.phone || '';
         member.address = member.address || '';
+        member.email = member.email || '';
         
         parsedMembers.push(member);
       }
@@ -96,7 +101,7 @@ export default function ImportMemberModal({
       setMembers(parsedMembers);
       setStep('preview');
     } catch (error) {
-      setError('Gagal membaca file. Pastikan file dalam format CSV yang benar.');
+      setError('Gagal membaca file. Pastikan file dalam format Excel yang benar.');
     } finally {
       setLoading(false);
     }
@@ -150,14 +155,14 @@ export default function ImportMemberModal({
   };
 
   const downloadTemplate = () => {
-    const csvContent = 'fullName,email,phone,address,joinDate\n"John Doe","john@example.com","081234567890","Jl. Contoh No. 123","2024-01-15"';
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'template_import_member.csv';
-    a.click();
-    window.URL.revokeObjectURL(url);
+    const headers = ['fullName', 'email', 'phone', 'address', 'joinDate'];
+    const data = [headers];
+    
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
+    
+    XLSX.writeFile(workbook, 'template_import_member.xlsx');
   };
 
   if (!isOpen) return null;
@@ -184,13 +189,13 @@ export default function ImportMemberModal({
         {step === 'upload' && (
           <div className="space-y-4">
             <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-blue-800 mb-2">Format File CSV</h3>
+              <h3 className="font-semibold text-blue-800 mb-2">Format File Excel</h3>
               <p className="text-sm text-blue-700 mb-2">
-                File harus dalam format CSV dengan header berikut:
+                File harus dalam format Excel dengan header berikut:
               </p>
               <ul className="text-sm text-blue-700 list-disc list-inside space-y-1">
                 <li><strong>fullName</strong> (wajib): Nama lengkap member</li>
-                <li><strong>email</strong> (wajib): Email member</li>
+                <li><strong>email</strong> (opsional): Email member</li>
                 <li><strong>phone</strong> (opsional): Nomor telepon</li>
                 <li><strong>address</strong> (opsional): Alamat</li>
                 <li><strong>joinDate</strong> (opsional): Tanggal bergabung (YYYY-MM-DD)</li>
@@ -199,17 +204,17 @@ export default function ImportMemberModal({
                 onClick={downloadTemplate}
                 className="mt-2 text-sm text-blue-600 hover:text-blue-800 underline"
               >
-                Download Template CSV
+                Download Template Excel
               </button>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Pilih File CSV
+                Pilih File Excel
               </label>
               <input
                 type="file"
-                accept=".csv"
+                accept=".xlsx,.xls"
                 onChange={handleFileChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />

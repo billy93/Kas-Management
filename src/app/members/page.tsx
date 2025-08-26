@@ -611,10 +611,10 @@ export default function MembersPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <h1 className="text-2xl font-bold">Members</h1>
         
-        <div className="flex space-x-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <button
             onClick={() => setViewMode('current')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -671,25 +671,26 @@ export default function MembersPage() {
           )}
           
           <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Nama Lengkap
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Email
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="hidden lg:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Telepon
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="hidden sm:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Organisasi
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Aksi
               </th>
             </tr>
@@ -697,16 +698,45 @@ export default function MembersPage() {
           <tbody className="bg-white divide-y divide-gray-200">
             {orgMembers.map((member) => (
               <tr key={member.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{member.fullName}</div>
+                <td className="px-4 sm:px-6 py-4">
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">{member.fullName}</div>
+                    {/* Show email and phone on mobile */}
+                    <div className="md:hidden mt-1">
+                      <div className="text-sm text-gray-500">{member.email || 'No email'}</div>
+                      <div className="lg:hidden text-sm text-gray-500">{member.phone || 'No phone'}</div>
+                    </div>
+                    {/* Show organization on mobile */}
+                    <div className="sm:hidden mt-1">
+                      {member.organizations && member.organizations.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {member.organizations.slice(0, 1).map((org) => (
+                            <span
+                              key={org.id}
+                              className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800"
+                            >
+                              {org.name}
+                            </span>
+                          ))}
+                          {member.organizations.length > 1 && (
+                            <span className="text-xs text-gray-500">
+                              +{member.organizations.length - 1} lainnya
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">No organization</span>
+                      )}
+                    </div>
+                  </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="hidden md:table-cell px-4 sm:px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">{member.email || '-'}</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="hidden lg:table-cell px-4 sm:px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">{member.phone || '-'}</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="hidden sm:table-cell px-4 sm:px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
                     {member.organizations && member.organizations.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
@@ -729,15 +759,15 @@ export default function MembersPage() {
                     )}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                     member.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                   }`}>
                     {member.isActive ? 'Aktif' : 'Tidak Aktif'}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex flex-wrap gap-2">
+                <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <div className="flex flex-wrap gap-1 sm:gap-2">
                     <button
                         onClick={() => handleView(member)}
                         className="inline-flex items-center px-2 sm:px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all duration-200"
@@ -802,6 +832,7 @@ export default function MembersPage() {
             ))}
           </tbody>
         </table>
+            </div>
         
         {members.length === 0 && (
           <div className="text-center py-8 text-gray-500">

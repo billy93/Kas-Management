@@ -4,18 +4,20 @@
 
 body { @apply bg-gray-50 text-gray-900; }
 
-/* Sidebar responsive styles - only apply to pages with sidebar */
-body.has-sidebar:not(.sidebar-collapsed) main {
-  margin-left: 16rem; /* 64 * 0.25rem = 16rem for expanded sidebar */
+/* Mobile responsive utilities */
+@media (max-width: 640px) {
+  .mobile-padding {
+    @apply px-3 py-4;
+  }
+  
+  .mobile-text {
+    @apply text-sm;
+  }
 }
 
-body.has-sidebar.sidebar-collapsed main {
-  margin-left: 4rem; /* 16 * 0.25rem = 4rem for collapsed sidebar */
-}
-
+/* Ensure proper scrolling on mobile */
 @media (max-width: 1024px) {
-  body.has-sidebar:not(.sidebar-collapsed) main,
-  body.has-sidebar.sidebar-collapsed main {
-    margin-left: 0;
+  body {
+    overflow-x: hidden;
   }
 }
