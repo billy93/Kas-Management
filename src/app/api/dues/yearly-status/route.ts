@@ -12,20 +12,39 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString());
+    const organizationIdParam = searchParams.get('organizationId');
 
-    // Get user's membership to find organization
-    const membership = await prisma.membership.findFirst({
-      where: { 
-        user: { email: session.user.email }
-      },
-      include: { organization: true }
-    });
+    let organizationId: string;
 
-    if (!membership?.organizationId) {
-      return NextResponse.json({ error: 'No organization found' }, { status: 400 });
+    if (organizationIdParam) {
+      // Verify user has access to this organization
+      const membership = await prisma.membership.findFirst({
+        where: { 
+          user: { email: session.user.email },
+          organizationId: organizationIdParam
+        }
+      });
+
+      if (!membership) {
+        return NextResponse.json({ error: 'Access denied to organization' }, { status: 403 });
+      }
+
+      organizationId = organizationIdParam;
+    } else {
+      // Fallback to user's first organization
+      const membership = await prisma.membership.findFirst({
+        where: { 
+          user: { email: session.user.email }
+        },
+        include: { organization: true }
+      });
+
+      if (!membership?.organizationId) {
+        return NextResponse.json({ error: 'No organization found' }, { status: 400 });
+      }
+
+      organizationId = membership.organizationId;
     }
-
-    const organizationId = membership.organizationId;
 
     // Get all members in the organization
     const members = await prisma.member.findMany({

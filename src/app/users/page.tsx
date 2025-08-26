@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useOrganization } from "@/contexts/OrganizationContext";
 
 interface InviteModalProps {
@@ -8,6 +10,14 @@ interface InviteModalProps {
   organizationName: string;
   organizationId: string;
   onInviteSent: () => void;
+}
+
+interface CreateUserModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  organizationName: string;
+  organizationId: string;
+  onUserCreated: () => void;
 }
 
 function InviteModal({ isOpen, onClose, organizationName, organizationId, onInviteSent }: InviteModalProps) {
@@ -144,6 +154,152 @@ function InviteModal({ isOpen, onClose, organizationName, organizationId, onInvi
   );
 }
 
+function CreateUserModal({ isOpen, onClose, organizationName, organizationId, onUserCreated }: CreateUserModalProps) {
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [role, setRole] = useState("VIEWER");
+  const [loading, setLoading] = useState(false);
+
+  const handleCreateUser = async () => {
+    if (!email) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch('/api/users/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          name: name || undefined,
+          organizationId,
+          role
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        alert('User berhasil dibuat!');
+        setEmail("");
+        setName("");
+        setRole("VIEWER");
+        onUserCreated();
+        onClose();
+      } else {
+        alert(`Gagal membuat user: ${data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error creating user:', error);
+      alert('Gagal membuat user: Network error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Tambah User Baru</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ✕
+          </button>
+        </div>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email *
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="user@example.com"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nama Lengkap
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Nama lengkap (opsional)"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Role
+            </label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="VIEWER">Viewer</option>
+              <option value="TREASURER">Bendahara</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+          </div>
+          
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <span className="text-blue-500">ℹ️</span>
+              </div>
+              <div className="ml-2 text-sm text-blue-700">
+                <p><strong>Catatan:</strong></p>
+                <p>User akan langsung dibuat dengan email terverifikasi otomatis. Tidak ada email konfirmasi yang akan dikirim.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex justify-end space-x-3 mt-6">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+            disabled={loading}
+          >
+            Batal
+          </button>
+          <button
+            onClick={handleCreateUser}
+            disabled={!email || loading}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Membuat...</span>
+              </>
+            ) : (
+              <>
+                <span>👤</span>
+                <span>Buat User</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface User {
   id: string;
   name?: string;
@@ -166,27 +322,52 @@ interface UserDetailModalProps {
   onClose: () => void;
 }
 
+interface EditUserModalProps {
+  user: User | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onUserUpdated: () => void;
+}
+
 function UserDetailModal({ user, isOpen, onClose }: UserDetailModalProps) {
-  const [activityData, setActivityData] = useState<any[]>([]);
+  const { selectedOrganization } = useOrganization();
+  const [paymentSummary, setPaymentSummary] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user && isOpen) {
-      fetchUserActivity(user.id);
+    if (user && isOpen && selectedOrganization) {
+      fetchPaymentSummary(user.id);
     }
-  }, [user, isOpen]);
+  }, [user, isOpen, selectedOrganization]);
 
-  const fetchUserActivity = async (userId: string) => {
+  const fetchPaymentSummary = async (userId: string) => {
+    if (!selectedOrganization) return;
+    
     setLoading(true);
     try {
-      // For now, we'll just show basic info
-      // In the future, you can add API endpoints for user activity
-      setActivityData([]);
+      const response = await fetch(`/api/users/payment-summary?organizationId=${selectedOrganization.id}&userId=${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPaymentSummary(data);
+      } else {
+        console.error('Failed to fetch payment summary');
+        setPaymentSummary(null);
+      }
     } catch (error) {
-      console.error('Error fetching user activity:', error);
+      console.error('Error fetching payment summary:', error);
+      setPaymentSummary(null);
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
   };
 
   if (!isOpen || !user) return null;
@@ -249,21 +430,37 @@ function UserDetailModal({ user, isOpen, onClose }: UserDetailModalProps) {
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Aktivitas Terbaru</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Ringkasan Pembayaran</label>
             {loading ? (
               <p className="text-gray-500">Loading...</p>
-            ) : activityData.length > 0 ? (
-              <div className="space-y-2">
-                {activityData.map((activity, index) => (
-                  <div key={index} className="p-2 bg-gray-50 rounded">
-                    {/* Activity details will be implemented later */}
-                    <p className="text-sm">{activity.description}</p>
-                    <p className="text-xs text-gray-500">{activity.timestamp}</p>
+            ) : paymentSummary ? (
+              <div className="space-y-3">
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-green-800">Total Sudah Dibayar</span>
+                    <span className="text-lg font-bold text-green-600">{formatCurrency(paymentSummary.paidAmount)}</span>
                   </div>
-                ))}
+                  <p className="text-xs text-green-600 mt-1">{paymentSummary.paidDues} tagihan lunas</p>
+                </div>
+                
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-red-800">Total Belum Dibayar</span>
+                    <span className="text-lg font-bold text-red-600">{formatCurrency(paymentSummary.unpaidAmount)}</span>
+                  </div>
+                  <p className="text-xs text-red-600 mt-1">{paymentSummary.unpaidDues} tagihan belum lunas</p>
+                </div>
+                
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-blue-800">Total Tagihan</span>
+                    <span className="text-lg font-bold text-blue-600">{paymentSummary.totalDues}</span>
+                  </div>
+                  <p className="text-xs text-blue-600 mt-1">Keseluruhan tagihan yang pernah dibuat</p>
+                </div>
               </div>
             ) : (
-              <p className="text-gray-500">Tidak ada aktivitas terbaru</p>
+              <p className="text-gray-500">Tidak ada data pembayaran</p>
             )}
           </div>
         </div>
@@ -276,6 +473,120 @@ function UserDetailModal({ user, isOpen, onClose }: UserDetailModalProps) {
             Tutup
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function EditUserModal({ user, isOpen, onClose, onUserUpdated }: EditUserModalProps) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name || "");
+      setEmail(user.email);
+    }
+  }, [user]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/users/${user.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: name.trim() || null,
+          email: email.trim(),
+        }),
+      });
+
+      if (response.ok) {
+        alert('User berhasil diperbarui!');
+        onUserUpdated();
+        onClose();
+      } else {
+        const errorData = await response.json();
+        alert(`Gagal memperbarui user: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+      alert('Gagal memperbarui user: Network error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen || !user) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-md w-full p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Edit User</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              Nama
+            </label>
+            <input
+              type="text"
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Masukkan nama user"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Masukkan email user"
+              required
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !email.trim()}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Menyimpan...' : 'Simpan'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
@@ -300,18 +611,46 @@ function getRoleLabel(role: string) {
 }
 
 export default function UsersPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const { selectedOrganization, loading: orgLoading } = useOrganization();
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isCreateUserModalOpen, setIsCreateUserModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push('/');
+    }
+  }, [status, router]);
 
   useEffect(() => {
     if (selectedOrganization && !orgLoading) {
       fetchUsers();
     }
   }, [selectedOrganization, orgLoading]);
+
+  // Show loading while checking session
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render page if not authenticated
+  if (!session) {
+    return null;
+  }
 
   const fetchUsers = async () => {
     if (!selectedOrganization) return;
@@ -333,8 +672,8 @@ export default function UsersPage() {
   };
 
   const handleEdit = (user: User) => {
-    // TODO: Implement edit functionality
-    alert(`Edit user: ${user.name || user.email}`);
+    setSelectedUser(user);
+    setIsEditModalOpen(true);
   };
 
   const handleDelete = async (user: User) => {
@@ -408,13 +747,22 @@ export default function UsersPage() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Users</h1>
-        <button
-          onClick={() => setIsInviteModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center space-x-2"
-        >
-          <span>📧</span>
-          <span>Undang User</span>
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={() => setIsCreateUserModalOpen(true)}
+            className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center space-x-2"
+          >
+            <span>👤</span>
+            <span>Tambah User</span>
+          </button>
+          <button
+            onClick={() => setIsInviteModalOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center space-x-2"
+          >
+            <span>📧</span>
+            <span>Undang User</span>
+          </button>
+        </div>
       </div>
       
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -430,9 +778,6 @@ export default function UsersPage() {
                 </th>
                 <th className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Role
-                </th>
-                <th className="hidden lg:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Aktivitas
                 </th>
                 <th className="hidden sm:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Bergabung
@@ -485,16 +830,7 @@ export default function UsersPage() {
                       <span className="text-sm text-gray-400">No role</span>
                     )}
                   </td>
-                  <td className="hidden lg:table-cell px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                        0 transaksi
-                      </span>
-                      <span className="ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                        0 pembayaran
-                      </span>
-                    </div>
-                  </td>
+                  
                   <td className="hidden sm:table-cell px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(user.createdAt).toLocaleDateString('id-ID')}
                   </td>
@@ -559,6 +895,21 @@ export default function UsersPage() {
         user={selectedUser}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+      />
+      
+      <EditUserModal
+        user={selectedUser}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onUserUpdated={fetchUsers}
+      />
+      
+      <CreateUserModal
+        isOpen={isCreateUserModalOpen}
+        onClose={() => setIsCreateUserModalOpen(false)}
+        organizationName={selectedOrganization?.name || ""}
+        organizationId={selectedOrganization?.id || ""}
+        onUserCreated={fetchUsers}
       />
       
       <InviteModal

@@ -22,20 +22,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get user's membership to find organization
+    const { month, year, amount, memberId, organizationId } = await req.json();
+    
+    console.log('POST /api/dues received:', { month, year, amount, memberId, organizationId });
+    
+    if (!organizationId) {
+      return NextResponse.json({ error: "organizationId is required" }, { status: 400 });
+    }
+    
+    // Verify user has access to this organization
     const membership = await prisma.membership.findFirst({
       where: { 
-        user: { email: session.user.email }
-      },
-      include: { organization: true }
+        user: { email: session.user.email },
+        organizationId: organizationId
+      }
     });
 
-    if (!membership?.organizationId) {
-      return NextResponse.json({ error: "No organization found" }, { status: 400 });
+    if (!membership) {
+      return NextResponse.json({ error: "Access denied to organization" }, { status: 403 });
     }
-
-    const organizationId = membership.organizationId;
-    const { month, year, amount, memberId } = await req.json();
     
     if (!month || !year || !amount) {
       return NextResponse.json({ error: "month, year, amount required" }, { status: 400 });

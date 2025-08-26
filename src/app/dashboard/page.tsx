@@ -1,11 +1,39 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from 'recharts';
 import { money } from "@/lib/utils";
 import { useOrganization } from "@/contexts/OrganizationContext";
 
 export default function Dashboard() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const { selectedOrganization, loading: orgLoading } = useOrganization();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push('/');
+    }
+  }, [status, router]);
+
+  // Show loading while checking session
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render dashboard if not authenticated
+  if (!session) {
+    return null;
+  }
   const [financialData, setFinancialData] = useState({
     income: 0,
     expense: 0,

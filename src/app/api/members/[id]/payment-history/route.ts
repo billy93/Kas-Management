@@ -4,76 +4,63 @@ import { prisma } from '@/lib/prisma';
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     const memberId = params.id;
+    const url = new URL(request.url);
+    const organizationId = url.searchParams.get('organizationId');
     
-    // Get the last 12 months
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
+    // Get all dues for this member, optionally filtered by organization
+    const whereClause: any = { memberId };
     
-    const monthsToCheck = [];
-    for (let i = 0; i < 12; i++) {
-      let month = currentMonth - i;
-      let year = currentYear;
+    if (organizationId) {
+      // Get member's organization to filter dues
+      const member = await prisma.member.findUnique({
+        where: { id: memberId },
+        select: { organizationId: true }
+      });
       
-      if (month <= 0) {
-        month += 12;
-        year -= 1;
+      if (member && member.organizationId === organizationId) {
+        whereClause.member = {
+          organizationId
+        };
+      } else {
+        return NextResponse.json([]);
       }
-      
-      monthsToCheck.push({ month, year });
     }
     
-    // Get dues configuration
-    const org = await prisma.organization.findFirst();
-    if (!org) {
-      return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
-    }
-    
-    const duesConfig = await prisma.duesConfig.findFirst({
-      where: { organizationId: org.id }
+    // Get all dues for this member
+    const dues = await prisma.dues.findMany({
+      where: whereClause,
+      include: {
+        payments: true,
+        member: {
+          include: {
+            organization: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: [
+        { year: 'desc' },
+        { month: 'desc' }
+      ]
     });
     
-    const defaultAmount = duesConfig?.amount || 50000;
-    
-    // Get all dues and payments for this member in the last 12 months
-    const paymentHistory = [];
-    
-    for (const { month, year } of monthsToCheck) {
-      // Check if dues exist for this month/year
-      const dues = await prisma.dues.findFirst({
-        where: {
-          memberId,
-          month,
-          year
-        },
-        include: {
-          payments: true
-        }
-      });
+    // Transform dues to payment history format
+    const paymentHistory = dues.map(due => {
+      const paidAmount = due.payments.reduce((sum, payment) => sum + payment.amount, 0);
       
-      let status: 'PENDING' | 'PARTIAL' | 'PAID' = 'PENDING';
-      let amount = defaultAmount;
-      let paidAmount = 0;
-      
-      if (dues) {
-        amount = dues.amount;
-        status = dues.status;
-        paidAmount = dues.payments.reduce((sum, payment) => sum + payment.amount, 0);
-      }
-      
-      paymentHistory.push({
-        month,
-        year,
-        status,
-        amount,
-        paidAmount
-      });
-    }
-    
-    // Sort by year and month (newest first)
-    paymentHistory.sort((a, b) => {
-      if (a.year !== b.year) return b.year - a.year;
-      return b.month - a.month;
+      return {
+        month: due.month,
+        year: due.year,
+        status: due.status,
+        amount: due.amount,
+        paidAmount,
+        organizationId: due.member.organizationId,
+        organizationName: due.member.organization.name
+      };
     });
     
     return NextResponse.json(paymentHistory);

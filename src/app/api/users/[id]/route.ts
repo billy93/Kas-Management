@@ -3,6 +3,106 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
 
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = params;
+    const body = await request.json();
+    const { name, email } = body;
+
+    // Validate input
+    if (!name || !email) {
+      return NextResponse.json(
+        { error: 'Name and email are required' },
+        { status: 400 }
+      );
+    }
+
+    // Check if email is already taken by another user
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (existingUser && existingUser.id !== id) {
+      return NextResponse.json(
+        { error: 'Email already exists' },
+        { status: 400 }
+      );
+    }
+
+    // Find the user to update
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        memberships: true
+      }
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if the current user has permission to update this user
+    const currentUser = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: {
+        memberships: {
+          include: {
+            organization: true
+          }
+        }
+      }
+    });
+
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Current user not found' }, { status: 404 });
+    }
+
+    // Check if both users share at least one organization
+    const currentUserOrgIds = currentUser.memberships.map(m => m.organizationId);
+    const targetUserOrgIds = user.memberships.map(m => m.organizationId);
+    const hasSharedOrg = currentUserOrgIds.some(orgId => targetUserOrgIds.includes(orgId));
+
+    if (!hasSharedOrg && currentUser.id !== user.id) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    // Update the user
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: {
+        name,
+        email
+      },
+      include: {
+        memberships: {
+          include: {
+            organization: true
+          }
+        }
+      }
+    });
+
+    return NextResponse.json(updatedUser);
+  } catch (error) {
+    console.error('Error updating user:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }

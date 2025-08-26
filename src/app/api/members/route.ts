@@ -43,43 +43,41 @@ export async function GET(req: NextRequest) {
 
     const members = await prisma.member.findMany({ 
       where: { organizationId },
+      include: {
+        userLinks: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        }
+      },
       orderBy: { fullName: 'asc' }
     });
     
-    // Get organizations for each member by matching email
+    // Get organization info for each member from their own organizationId
     const membersWithOrganizations = await Promise.all(
-      members.map(async (member) => {
-        let organizations = [];
-        
-        if (member.email) {
-          const userWithMemberships = await prisma.user.findUnique({
-            where: { email: member.email },
-            include: {
-              memberships: {
-                include: {
-                  organization: {
-                    select: {
-                      id: true,
-                      name: true
-                    }
-                  }
-                }
-              }
-            }
-          });
-          
-          if (userWithMemberships) {
-            organizations = userWithMemberships.memberships.map(membership => ({
-              id: membership.organization.id,
-              name: membership.organization.name,
-              role: membership.role
-            }));
+      members.map(async (member: any) => {
+        // Get organization info from member's organizationId
+        const organization = await prisma.organization.findUnique({
+          where: { id: member.organizationId },
+          select: {
+            id: true,
+            name: true
           }
-        }
+        });
         
         return {
           ...member,
-          organizations
+          organizations: organization ? [{
+            id: organization.id,
+            name: organization.name,
+            role: 'MEMBER' // Member role in their organization
+          }] : []
         };
       })
     );

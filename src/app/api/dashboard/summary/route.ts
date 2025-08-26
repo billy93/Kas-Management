@@ -52,13 +52,16 @@ export async function GET(request: NextRequest) {
     const transactionIncome = transactions.filter((t: any) => t.type === "INCOME").reduce((a: number, t: any) => a + t.amount, 0);
     const expense = transactions.filter((t: any) => t.type === "EXPENSE").reduce((a: number, t: any) => a + t.amount, 0);
     
-    // Get payments (dues income) for current year
+    // Get payments (dues income) for current year - filtered by organization
     const currentYear = new Date().getFullYear();
     const payments = await prisma.payment.findMany({
       where: {
         paidAt: {
           gte: new Date(`${currentYear}-01-01`),
           lt: new Date(`${currentYear + 1}-01-01`)
+        },
+        dues: {
+          organizationId: org.id
         }
       }
     });

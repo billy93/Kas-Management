@@ -34,7 +34,6 @@ export async function GET(req: NextRequest) {
         }
       }
     });
-
     if (!user || user.memberships.length === 0) {
       return NextResponse.json({ error: "Access denied to this organization" }, { status: 403 });
     }
@@ -64,10 +63,10 @@ export async function GET(req: NextRequest) {
     });
 
     // Filter users who have memberships in the selected organization
-    const filteredUsers = users.filter(user => user.memberships.length > 0);
+    const filteredUsers = users.filter((user: any) => user.memberships.length > 0);
 
     // Format the response
-    const usersWithDetails = filteredUsers.map(user => ({
+    const usersWithDetails = filteredUsers.map((user: any) => ({
       id: user.id,
       email: user.email,
       name: user.name,
@@ -75,7 +74,7 @@ export async function GET(req: NextRequest) {
       emailVerified: user.emailVerified,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
-      memberships: user.memberships.map(membership => ({
+      memberships: user.memberships.map((membership: any) => ({
         id: membership.id,
         role: membership.role,
         organization: membership.organization,

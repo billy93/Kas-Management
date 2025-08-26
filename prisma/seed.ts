@@ -6,25 +6,53 @@ async function main() {
   const org1 = await prisma.organization.upsert({
     where: { id: "seed-org" },
     update: {},
-    create: { id: "seed-org", name: "Kas RT 01" }
+    create: { 
+      id: "seed-org", 
+      name: "Kas RT 01",
+      description: "Kas untuk keperluan RT 01 RW 05",
+      address: "Jl. Mawar No. 123, Jakarta Selatan",
+      phone: "021-12345678",
+      email: "kasrt01@gmail.com"
+    }
   });
 
   const org2 = await prisma.organization.upsert({
     where: { id: "seed-org-2" },
     update: {},
-    create: { id: "seed-org-2", name: "Kas Gereja" }
+    create: { 
+      id: "seed-org-2", 
+      name: "Kas Gereja",
+      description: "Kas untuk kegiatan gereja dan pelayanan",
+      address: "Jl. Gereja Raya No. 456, Jakarta Pusat",
+      phone: "021-87654321",
+      email: "kasgereja@gmail.com"
+    }
   });
 
   const org3 = await prisma.organization.upsert({
     where: { id: "seed-org-3" },
     update: {},
-    create: { id: "seed-org-3", name: "Kas Komunitas" }
+    create: { 
+      id: "seed-org-3", 
+      name: "Kas Komunitas",
+      description: "Kas untuk kegiatan komunitas dan sosial",
+      address: "Jl. Komunitas No. 789, Jakarta Barat",
+      phone: "021-11223344",
+      email: "kaskomunitas@gmail.com"
+    }
   });
 
   const org4 = await prisma.organization.upsert({
     where: { id: "kas-imus" },
     update: {},
-    create: { id: "kas-imus", name: "Kas Imus" }
+    create: { 
+      id: "kas-imus", 
+      name: "Kas Imus",
+      description: "Kas untuk kegiatan Imus dan keluarga",
+      address: "Jl. Imus Raya No. 321, Jakarta Timur",
+      phone: "021-55667788",
+      email: "kasimus@gmail.com"
+    }
   });
 
   // Create test user
