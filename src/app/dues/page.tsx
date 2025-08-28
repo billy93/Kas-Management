@@ -640,8 +640,8 @@ export default function DuesPage() {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
     return (
-      member.member.fullName.toLowerCase().includes(searchLower) ||
-      member.member.email.toLowerCase().includes(searchLower)
+      member.member.fullName?.toLowerCase().includes(searchLower) ||
+      member.member.email?.toLowerCase().includes(searchLower)
     );
   });
 
