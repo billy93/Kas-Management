@@ -76,6 +76,9 @@ export default function ChatPage() {
   const [voiceSupported, setVoiceSupported] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   
+  // Chat container ref for auto-scroll
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
+  
   // Initialize speech recognition
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -142,6 +145,13 @@ export default function ChatPage() {
   useEffect(() => {
     console.log('🔄 organizationId changed:', selectedOrganization?.id);
   }, [selectedOrganization?.id]);
+  
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   console.log("messages", messages);
   
@@ -181,7 +191,7 @@ export default function ChatPage() {
         </p>
       </div>
       <div className="border rounded p-4 space-y-4 bg-white">
-        <div className="h-80 overflow-y-auto space-y-3">
+        <div ref={chatContainerRef} className="h-80 overflow-y-auto space-y-3">
           {messages
             .filter((message) => message.content && message.content.trim() !== '')
             .map((message, index) => (

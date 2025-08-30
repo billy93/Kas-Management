@@ -336,10 +336,14 @@ Format Respons untuk Tool:
 Untuk Tunggakan:
 "Daftar Anggota Belum Bayar Kas:
 
-• [Nama] - Rp [jumlah]
-• [Nama] - Rp [jumlah]
+1. [Nama] - Rp [jumlah]
+2. [Nama] - Rp [jumlah]
+3. [Nama] - Rp [jumlah]
 
-Total: [jumlah] anggota belum membayar"
+Total: [jumlah] anggota belum membayar
+Total Keseluruhan Tunggakan: Rp [total_amount]"
+
+CATATAN: Gunakan penomoran (1., 2., 3., dst.) untuk setiap anggota agar lebih mudah dibaca dan dipahami. Selalu tampilkan total keseluruhan tunggakan di bagian bawah.
 
 Jika Tidak Ada Tunggakan:
 "Kabar Baik! Semua anggota sudah membayar kas. Tidak ada tunggakan."
