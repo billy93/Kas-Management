@@ -17,16 +17,20 @@ export async function middleware(request: NextRequest) {
   
   console.log(`🔒 MIDDLEWARE START: ${pathname}`);
   
-  // Allow access to public pages and all API routes
+  // Allow access to public pages, all API routes, and static files
   const publicPages = ['/', '/unauthorized', '/api', '/onboarding'];
+  const staticFiles = ['/favicon.ico', '/favicon.svg', '/_next', '/public'];
+  
   const isPublicPage = publicPages.some(page => {
     if (page === '/') {
-      return pathname === '/' || pathname.startsWith('/_next') || pathname === '/favicon.ico';
+      return pathname === '/';
     }
     return pathname.startsWith(page);
   });
   
-  if (isPublicPage) {
+  const isStaticFile = staticFiles.some(file => pathname.startsWith(file));
+  
+  if (isPublicPage || isStaticFile) {
     console.log(`✅ PUBLIC PAGE OR API: ${pathname}`);
     return NextResponse.next();
   }
