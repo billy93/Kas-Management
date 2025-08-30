@@ -359,9 +359,11 @@ Jika Tidak Ada Tunggakan:
 Untuk Saldo:
 "Ringkasan Keuangan:
 
-Total Pemasukan: Rp [jumlah]
+Total Pemasukan: Rp [jumlah] (Transaksi: Rp [transactionIncome] + Pembayaran Kas: Rp [kasPayments])
 Total Pengeluaran: Rp [jumlah]
-Saldo Akhir: Rp [jumlah]"
+Saldo Akhir: Rp [jumlah]
+
+Catatan: Total pemasukan sudah termasuk semua pembayaran kas dari anggota."
 
 Ingat: Jika tidak ada informasi di Knowledge Base dan tidak bisa menggunakan tool, jawab: "Maaf kami tidak dapat menjawab pertanyaan anda"`,
     });

@@ -103,10 +103,36 @@ export async function tool_getTransaction({ organizationId }: { organizationId?:
     orgId = org.id;
   }
 
+  // Get all transactions
   const tx = await prisma.transaction.findMany({ where: { organizationId: orgId } });
-  const income = tx.filter((t:any) => t.type === "INCOME").reduce((a:number, t:any) => a + t.amount, 0);
+  
+  // Get total payments from all members (kas payments)
+  const totalPayments = await prisma.payment.aggregate({
+    where: {
+      dues: {
+        organizationId: orgId
+      }
+    },
+    _sum: {
+      amount: true
+    }
+  });
+
+  const transactionIncome = tx.filter((t:any) => t.type === "INCOME").reduce((a:number, t:any) => a + t.amount, 0);
   const expense = tx.filter((t:any) => t.type === "EXPENSE").reduce((a:number, t:any) => a + t.amount, 0);
-  return { income, expense, balance: income - expense, transactions: tx };
+  const kasPayments = totalPayments._sum.amount || 0;
+  
+  // Total income = transaction income + kas payments from members
+  const totalIncome = transactionIncome + kasPayments;
+  
+  return { 
+    income: totalIncome, 
+    transactionIncome, 
+    kasPayments, 
+    expense, 
+    balance: totalIncome - expense, 
+    transactions: tx 
+  };
 }
 
 export async function tool_addIncome({ 

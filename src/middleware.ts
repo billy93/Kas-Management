@@ -8,8 +8,8 @@ console.log('🚀 MIDDLEWARE LOADED - SRC FOLDER VERSION');
 const ROLE_PERMISSIONS = {
   VIEWER: ['/dashboard', '/chat'],
   TREASURER: ['/dashboard', '/chat', '/transactions', '/dues'],
-  ADMIN: ['/dashboard', '/chat', '/transactions', '/dues', '/users', '/settings'],
-  OWNER: ['/dashboard', '/chat', '/transactions', '/dues', '/users', '/settings']
+  ADMIN: ['/dashboard', '/chat', '/transactions', '/dues', '/users', '/settings', '/organization', '/payments', '/members', '/user-member-link'],
+  OWNER: ['/dashboard', '/chat', '/transactions', '/dues', '/users', '/settings', '/organization', '/payments', '/members', '/user-member-link']
 };
 
 export async function middleware(request: NextRequest) {
