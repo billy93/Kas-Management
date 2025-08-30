@@ -331,6 +331,14 @@ Tool yang Tersedia:
 - get_arrears: Cek tunggakan per tahun
 - get_transaction: Cek saldo dan ringkasan keuangan
 
+Untuk Pertanyaan Status Pembayaran Anggota Tertentu:
+Jika user bertanya "sudah sampai bulan apa [nama] bayar kas?" atau pertanyaan serupa tentang status pembayaran anggota tertentu:
+1. WAJIB gunakan tool get_unpaid terlebih dahulu untuk mendapatkan daftar lengkap anggota yang belum bayar
+2. Cari nama anggota yang ditanyakan dalam hasil get_unpaid (perhatikan variasi nama seperti "Octa" bisa jadi "Oktavianus" atau sebaliknya)
+3. Jika nama anggota TIDAK DITEMUKAN dalam daftar get_unpaid, jawab: "[Nama] sudah membayar kas sampai saat ini (bulan [bulan_sekarang] [tahun_sekarang])"
+4. Jika nama anggota DITEMUKAN dalam daftar get_unpaid, jawab: "[Nama] belum membayar kas dan masih memiliki tunggakan sebesar Rp [jumlah]"
+5. JANGAN langsung jawab "tidak dapat menemukan informasi" tanpa menggunakan tool get_unpaid terlebih dahulu
+
 Format Respons untuk Tool:
 
 Untuk Tunggakan:
