@@ -23,6 +23,7 @@ model User {
   payments      Payment[]
   memberLinks   UserMemberLink[]
   auditLogs     AuditLog[]
+  knowledgeBases KnowledgeBase[]
 }
 
 model Organization {
@@ -41,6 +42,7 @@ model Organization {
   dues          Dues[] @relation("OrganizationDues")
   auditLogs     AuditLog[]
   userMemberLinks UserMemberLink[]
+  knowledgeBases KnowledgeBase[]
 }
 
 model Membership {
@@ -207,5 +209,27 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model KnowledgeBase {
+  id            String    @id @default(cuid())
+  organizationId String
+  title         String
+  content       String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  createdById   String?
+  createdBy     User?     @relation(fields: [createdById], references: [id])
+  organization  Organization @relation(fields: [organizationId], references: [id])
+  embeddings    Embedding[]
+}
+
+model Embedding {
+  id              String        @id @default(cuid())
+  knowledgeBaseId String
+  content         String        // The chunked text content
+  embedding       Float[]       // Vector embedding
+  createdAt       DateTime      @default(now())
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
 }
 

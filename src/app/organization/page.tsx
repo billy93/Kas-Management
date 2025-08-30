@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useOrganization } from "@/contexts/OrganizationContext";
+import KnowledgeBaseManager from "@/components/KnowledgeBaseManager";
 
 interface Organization {
   id: string;
@@ -487,6 +488,16 @@ export default function MasterDataPage() {
           )}
         </div>
       </div>
+
+      {/* Knowledge Base Management */}
+      {selectedOrganization && (
+        <div className="mt-6">
+          <KnowledgeBaseManager 
+            organizationId={selectedOrganization.id} 
+            organizationName={selectedOrganization.name} 
+          />
+        </div>
+      )}
 
       {/* Members Modal */}
       {showMembersModal && selectedOrgForMembers && (

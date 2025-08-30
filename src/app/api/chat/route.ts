@@ -4,7 +4,122 @@ import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
-import { tool_getUnpaid, tool_getArrears, tool_getBalance, tool_addIncome, tool_addExpense, tool_editIncome, tool_editExpense, tool_deleteTransaction } from "@/lib/ai-tools";
+import { prisma } from "@/lib/prisma";
+import { tool_getUnpaid, tool_getArrears, tool_getTransaction, tool_addIncome, tool_addExpense, tool_editIncome, tool_editExpense, tool_deleteTransaction } from "@/lib/ai-tools";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import OpenAI from "openai";
+
+const openaiClient = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Function to calculate cosine similarity
+function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length !== b.length) {
+    throw new Error("Vectors must have the same length");
+  }
+
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+
+  for (let i = 0; i < a.length; i++) {
+    dotProduct += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+
+  normA = Math.sqrt(normA);
+  normB = Math.sqrt(normB);
+
+  if (normA === 0 || normB === 0) {
+    return 0;
+  }
+
+  return dotProduct / (normA * normB);
+}
+
+// Function to generate embedding for query
+async function generateQueryEmbedding(query: string): Promise<number[]> {
+  try {
+    const response = await openaiClient.embeddings.create({
+      model: "text-embedding-3-large",
+      input: query,
+    });
+    return response.data[0].embedding;
+  } catch (error) {
+    console.error("Error generating query embedding:", error);
+    throw new Error("Failed to generate query embedding");
+  }
+}
+
+// Function to search relevant knowledge base content directly using Prisma
+async function searchKnowledgeBase(query: string, organizationId: string): Promise<string> {
+  try {
+    console.log('🔍 Searching knowledge base for query:', query);
+    // Generate embedding for the query
+    const queryEmbedding = await generateQueryEmbedding(query);
+    console.log('📊 Query embedding generated, length:', queryEmbedding.length);
+    console.log("searchKnowledgeBase queryEmbedding : ",queryEmbedding)
+    
+    // Get all embeddings for this organization
+    const embeddings = await prisma.embedding.findMany({
+      where: {
+        knowledgeBase: {
+          organizationId: organizationId,
+        },
+      },
+      include: {
+        knowledgeBase: {
+          select: {
+            id: true,
+            title: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+    console.log("searchKnowledgeBase embeddings count:", embeddings.length)
+    if (embeddings.length > 0) {
+      console.log("First embedding length:", embeddings[0].embedding.length);
+      console.log("Query embedding length:", queryEmbedding.length);
+      console.log("First few values of query embedding:", queryEmbedding.slice(0, 5));
+      console.log("First few values of stored embedding:", embeddings[0].embedding.slice(0, 5));
+    }
+
+    // Calculate similarities and filter by threshold
+    const similarities = embeddings
+      .map((embedding:any) => {
+        const similarity = cosineSimilarity(queryEmbedding, embedding.embedding);
+        console.log(`Similarity for "${embedding.content.substring(0, 50)}...": ${similarity}`);
+        return {
+          id: embedding.id,
+          content: embedding.content,
+          similarity,
+          knowledgeBase: embedding.knowledgeBase,
+          createdAt: embedding.createdAt,
+        };
+      })
+      .filter((item:any) => item.similarity >= 0.1) // Further lowered threshold for debugging
+      .sort((a:any, b:any) => b.similarity - a.similarity)
+      .slice(0, 3);
+
+    console.log("searchKnowledgeBase similarities : ",similarities)
+    if (similarities.length > 0) {
+      const relevantContent = similarities
+        .map((result:any) => `**${result.knowledgeBase.title}:**\n${result.content}`)
+        .join('\n\n');
+      
+      console.log('🧠 Found relevant knowledge base content:', similarities.length, 'results');
+      return relevantContent;
+    }
+    
+    return '';
+  } catch (error) {
+    console.error('❌ Error searching knowledge base:', error);
+    return '';
+  }
+}
 
 // Removed edge runtime to support Prisma
 
@@ -52,12 +167,21 @@ export async function POST(req: NextRequest) {
   console.log('✅ organizationId validated:', organizationId);
 
   try {
+    // Search for relevant knowledge base content
+    const lastUserMessage = messages[messages.length - 1]?.content || '';
+    const knowledgeBaseContent = await searchKnowledgeBase(lastUserMessage, organizationId);
+    
     console.log('🤖 Starting streamText with model gpt-4o-mini');
     console.log('📝 Messages to process:', JSON.stringify(messages, null, 2));
+    console.log('🧠 Knowledge base content found:', knowledgeBaseContent ? 'Yes' : 'No');
     
+    const openrouter = createOpenRouter({
+      apiKey: process.env.OPENROUTER_API_KEY,
+    });
     // Generate streaming response with tools
     const result = streamText({
       model: openai('gpt-4o-mini'),
+      // model: openrouter('moonshotai/kimi-k2:free'),
       messages,
       maxSteps: 5,
       temperature: 0.7,
@@ -90,144 +214,168 @@ export async function POST(req: NextRequest) {
           }),
           execute: async (params) => tool_getArrears({ ...params, organizationId: params.organizationId || organizationId })
         },
-        get_balance: {
+        get_transaction: {
           description: "Get total income, expense, and balance.",
           parameters: z.object({
             organizationId: z.string().optional()
           }),
-          execute: async (params) => tool_getBalance({ ...params, organizationId: params.organizationId || organizationId })
+          execute: async (params) => tool_getTransaction({ ...params, organizationId: params.organizationId || organizationId })
         },
-        add_income: {
-          description: "Add a new income transaction to the organization.",
-          parameters: z.object({
-            amount: z.number().positive().describe("Amount of income in IDR"),
-            category: z.string().describe("Category of income (e.g., 'Donasi', 'Penjualan', 'Lainnya')"),
-            note: z.string().optional().describe("Optional note or description"),
-            organizationId: z.string().optional(),
-            createdById: z.string().optional()
-          }),
-          execute: async (params) => {
-            console.log('🔧 Executing tool_addIncome with params:', params);
-            const result = await tool_addIncome({ ...params, organizationId: params.organizationId || organizationId, createdById: userId });
-            console.log('🎯 tool_addIncome execution completed');
-            return result;
-          }
-        },
-        add_expense: {
-          description: "Add a new expense transaction to the organization.",
-          parameters: z.object({
-            amount: z.number().positive().describe("Amount of expense in IDR"),
-            category: z.string().describe("Category of expense (e.g., 'Operasional', 'Konsumsi', 'Transport', 'Lainnya')"),
-            note: z.string().optional().describe("Optional note or description"),
-            organizationId: z.string().optional(),
-            createdById: z.string().optional()
-          }),
-          execute: async (params) => {
-            console.log('🔧 Executing tool_addExpense with params:', params);
-            const result = await tool_addExpense({ ...params, organizationId: params.organizationId || organizationId, createdById: userId });
-            console.log('🎯 tool_addExpense execution completed');
-            return result;
-          }
-        },
-        edit_income: {
-          description: "Edit an existing income transaction.",
-          parameters: z.object({
-            transactionId: z.string().describe("ID of the transaction to edit"),
-            amount: z.number().positive().optional().describe("New amount of income in IDR"),
-            category: z.string().optional().describe("New category of income (e.g., 'Donasi', 'Penjualan', 'Lainnya')"),
-            note: z.string().optional().describe("New note or description"),
-            organizationId: z.string().optional(),
-            createdById: z.string().optional()
-          }),
-          execute: async (params) => {
-            console.log('🔧 Executing tool_editIncome with params:', params);
-            const result = await tool_editIncome({ ...params, organizationId: params.organizationId || organizationId, createdById: userId });
-            console.log('🎯 tool_editIncome execution completed');
-            return result;
-          }
-        },
-        edit_expense: {
-          description: "Edit an existing expense transaction.",
-          parameters: z.object({
-            transactionId: z.string().describe("ID of the transaction to edit"),
-            amount: z.number().positive().optional().describe("New amount of expense in IDR"),
-            category: z.string().optional().describe("New category of expense (e.g., 'Operasional', 'Konsumsi', 'Transport', 'Lainnya')"),
-            note: z.string().optional().describe("New note or description"),
-            organizationId: z.string().optional(),
-            createdById: z.string().optional()
-          }),
-          execute: async (params) => {
-            console.log('🔧 Executing tool_editExpense with params:', params);
-            const result = await tool_editExpense({ ...params, organizationId: params.organizationId || organizationId, createdById: userId });
-            console.log('🎯 tool_editExpense execution completed');
-            return result;
-          }
-        },
-        delete_transaction: {
-          description: "Delete an existing transaction (income or expense).",
-          parameters: z.object({
-            transactionId: z.string().describe("ID of the transaction to delete"),
-            organizationId: z.string().optional(),
-            createdById: z.string().optional()
-          }),
-          execute: async (params) => {
-            console.log('🔧 Executing tool_deleteTransaction with params:', params);
-            const result = await tool_deleteTransaction({ ...params, organizationId: params.organizationId || organizationId, createdById: userId });
-            console.log('🎯 tool_deleteTransaction execution completed');
-            return result;
-          }
-        }
+        // add_income: {
+        //   description: "Add a new income transaction to the organization.",
+        //   parameters: z.object({
+        //     amount: z.number().positive().describe("Amount of income in IDR"),
+        //     category: z.string().describe("Category of income (e.g., 'Donasi', 'Penjualan', 'Lainnya')"),
+        //     note: z.string().optional().describe("Optional note or description"),
+        //     organizationId: z.string().optional(),
+        //     createdById: z.string().optional()
+        //   }),
+        //   execute: async (params) => {
+        //     console.log('🔧 Executing tool_addIncome with params:', params);
+        //     const result = await tool_addIncome({ ...params, organizationId: params.organizationId || organizationId, createdById: userId });
+        //     console.log('🎯 tool_addIncome execution completed');
+        //     return result;
+        //   }
+        // },
+        // add_expense: {
+        //   description: "Add a new expense transaction to the organization.",
+        //   parameters: z.object({
+        //     amount: z.number().positive().describe("Amount of expense in IDR"),
+        //     category: z.string().describe("Category of expense (e.g., 'Operasional', 'Konsumsi', 'Transport', 'Lainnya')"),
+        //     note: z.string().optional().describe("Optional note or description"),
+        //     organizationId: z.string().optional(),
+        //     createdById: z.string().optional()
+        //   }),
+        //   execute: async (params) => {
+        //     console.log('🔧 Executing tool_addExpense with params:', params);
+        //     const result = await tool_addExpense({ ...params, organizationId: params.organizationId || organizationId, createdById: userId });
+        //     console.log('🎯 tool_addExpense execution completed');
+        //     return result;
+        //   }
+        // },
+        // edit_income: {
+        //   description: "Edit an existing income transaction.",
+        //   parameters: z.object({
+        //     transactionId: z.string().describe("ID of the transaction to edit"),
+        //     amount: z.number().positive().optional().describe("New amount of income in IDR"),
+        //     category: z.string().optional().describe("New category of income (e.g., 'Donasi', 'Penjualan', 'Lainnya')"),
+        //     note: z.string().optional().describe("New note or description"),
+        //     organizationId: z.string().optional(),
+        //     createdById: z.string().optional()
+        //   }),
+        //   execute: async (params) => {
+        //     console.log('🔧 Executing tool_editIncome with params:', params);
+        //     const result = await tool_editIncome({ ...params, organizationId: params.organizationId || organizationId, createdById: userId });
+        //     console.log('🎯 tool_editIncome execution completed');
+        //     return result;
+        //   }
+        // },
+        // edit_expense: {
+        //   description: "Edit an existing expense transaction.",
+        //   parameters: z.object({
+        //     transactionId: z.string().describe("ID of the transaction to edit"),
+        //     amount: z.number().positive().optional().describe("New amount of expense in IDR"),
+        //     category: z.string().optional().describe("New category of expense (e.g., 'Operasional', 'Konsumsi', 'Transport', 'Lainnya')"),
+        //     note: z.string().optional().describe("New note or description"),
+        //     organizationId: z.string().optional(),
+        //     createdById: z.string().optional()
+        //   }),
+        //   execute: async (params) => {
+        //     console.log('🔧 Executing tool_editExpense with params:', params);
+        //     const result = await tool_editExpense({ ...params, organizationId: params.organizationId || organizationId, createdById: userId });
+        //     console.log('🎯 tool_editExpense execution completed');
+        //     return result;
+        //   }
+        // },
+        // delete_transaction: {
+        //   description: "Delete an existing transaction (income or expense).",
+        //   parameters: z.object({
+        //     transactionId: z.string().describe("ID of the transaction to delete"),
+        //     organizationId: z.string().optional(),
+        //     createdById: z.string().optional()
+        //   }),
+        //   execute: async (params) => {
+        //     console.log('🔧 Executing tool_deleteTransaction with params:', params);
+        //     const result = await tool_deleteTransaction({ ...params, organizationId: params.organizationId || organizationId, createdById: userId });
+        //     console.log('🎯 tool_deleteTransaction execution completed');
+        //     return result;
+        //   }
+        // }
       },
-      system: `You are a helpful finance assistant for a community cash app. You can respond in Indonesian or English based on the user's language.
+      system: `Anda adalah asisten keuangan yang membantu mengelola kas komunitas. Berikan respons yang ramah, jelas, dan mudah dipahami dalam bahasa Indonesia.
 
-Current context:
-- Current month: ${new Date().getMonth() + 1}
-- Current year: ${new Date().getFullYear()}
-- Organization ID: ${organizationId}
+Konteks Saat Ini:
+- Bulan: ${new Date().getMonth() + 1}
+- Tahun: ${new Date().getFullYear()}
+- ID Organisasi: ${organizationId}
 
-IMPORTANT RULES:
-1. You MUST ALWAYS provide a text response after using any tool
-2. NEVER just execute tools silently - always explain the results
-3. When you use get_unpaid tool, you MUST format the results clearly
-4. Always provide a complete summary of what you found
-5. For income/expense transactions, always confirm the action was successful
+${knowledgeBaseContent ? `Informasi Tambahan dari Knowledge Base:
 
-When users ask about:
-- "siapa saja yang belum bayar uang kas" or "who hasn't paid" without specifying time period
-- "tambah pemasukan" or "add income" - use add_income tool with amount, category, and optional note
-- "tambah pengeluaran" or "add expense" - use add_expense tool with amount, category, and optional note
-- "edit pemasukan" or "edit income" - use edit_income tool with transaction ID and fields to update
-- "edit pengeluaran" or "edit expense" - use edit_expense tool with transaction ID and fields to update
-- "hapus transaksi" or "delete transaction" - use delete_transaction tool with transaction ID
-- "saldo" or "balance" - use get_balance tool to show current financial status
+${knowledgeBaseContent}
 
-For get_unpaid queries, you MUST respond with this exact format:
-"Berikut adalah anggota yang belum membayar kas untuk [bulan] [tahun]:
+---
+
+Gunakan informasi di atas untuk memberikan jawaban yang lebih akurat dan relevan jika berkaitan dengan pertanyaan pengguna.
+` : ''}
+
+Panduan Respons:
+1. Selalu berikan respons yang lengkap dan informatif
+2. Gunakan format yang rapi dengan emoji untuk memperjelas
+3. Konfirmasi setiap tindakan yang berhasil dilakukan
+4. Berikan ringkasan yang mudah dipahami
+
+Fitur yang Tersedia:
+
+Cek Tunggakan:
+- "siapa yang belum bayar kas" → Tampilkan daftar anggota yang belum bayar
+
+Kelola Pemasukan:
+- "tambah pemasukan [jumlah] [kategori]" → Catat pemasukan baru
+- "edit pemasukan [ID]" → Ubah data pemasukan
+
+Kelola Pengeluaran:
+- "tambah pengeluaran [jumlah] [kategori]" → Catat pengeluaran baru
+- "edit pengeluaran [ID]" → Ubah data pengeluaran
+
+Lainnya:
+- "hapus transaksi [ID]" → Hapus transaksi
+- "cek saldo" → Lihat ringkasan keuangan
+
+Format Respons:
+
+Untuk Tunggakan:
+"Daftar Anggota Belum Bayar Kas:
+
 • [Nama] - Rp [jumlah]
 • [Nama] - Rp [jumlah]
 
 Total: [jumlah] anggota belum membayar"
 
-If no unpaid members found: "Semua anggota sudah membayar kas untuk [bulan] [tahun]. Tidak ada yang tertunggak."
+Jika Tidak Ada Tunggakan:
+"Kabar Baik! Semua anggota sudah membayar kas. Tidak ada tunggakan."
 
-For income/expense transactions:
-- Always ask for amount and category if not provided
-- Common income categories: "Donasi", "Penjualan", "Lainnya"
-- Common expense categories: "Operasional", "Konsumsi", "Transport", "Lainnya"
-- Always confirm the transaction was recorded successfully
-- Show the transaction details in a clear format
+Untuk Transaksi Berhasil:
+"Transaksi Berhasil Dicatat!
 
-For editing transactions:
-- Always ask for transaction ID if not provided
-- Only update the fields that are specified by the user
-- Confirm what fields were updated and show the new values
+Detail:
+- Jenis: [Pemasukan/Pengeluaran]
+- Jumlah: Rp [jumlah]
+- Kategori: [kategori]
+- Catatan: [catatan]
+- Waktu: [tanggal]"
 
-For deleting transactions:
-- Always ask for transaction ID if not provided
-- Confirm the deletion with transaction details
-- Show what was deleted (type, amount, category)
+Untuk Saldo:
+"Ringkasan Keuangan:
 
-Remember: You must ALWAYS provide a visible text response that users can read. Never leave responses empty.`,
+Total Pemasukan: Rp [jumlah]
+Total Pengeluaran: Rp [jumlah]
+Saldo Akhir: Rp [jumlah]"
+
+Kategori Umum:
+- Pemasukan: "Iuran Kas", "Donasi", "Penjualan", "Lainnya"
+- Pengeluaran: "Operasional", "Konsumsi", "Transport", "Kegiatan", "Lainnya"
+
+Penting: Selalu berikan respons yang dapat dibaca pengguna. Jangan pernah memberikan respons kosong.`,
     });
 
     console.log('✅ streamText initiated');

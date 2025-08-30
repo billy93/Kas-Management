@@ -41,9 +41,9 @@ export async function tool_getUnpaid({ organizationId }: { organizationId?: stri
      // Group by member and calculate total unpaid amount
      const memberTotals = new Map();
      
-     dues.forEach(d => {
+     dues.forEach((d:any) => {
        const memberId = d.member.id;
-       const totalPaid = d.payments.reduce((a, p) => a + p.amount, 0);
+       const totalPaid = d.payments.reduce((a:number, p:any) => a + p.amount, 0);
        const remainingAmount = d.amount - totalPaid;
        
        if (remainingAmount > 0) {
@@ -88,13 +88,13 @@ export async function tool_getArrears({ year, organizationId }: { year: number; 
     const key = d.memberId;
     const rec = byMember.get(key) || { member: d.member.fullName, totalDue: 0, totalPaid: 0 };
     rec.totalDue += d.amount;
-    rec.totalPaid += d.payments.reduce((a, p) => a + p.amount, 0);
+    rec.totalPaid += d.payments.reduce((a:number, p:any) => a + p.amount, 0);
     byMember.set(key, rec);
   }
   return Array.from(byMember.values()).filter(r => r.totalPaid < r.totalDue).map(r => ({ ...r, arrears: r.totalDue - r.totalPaid }));
 }
 
-export async function tool_getBalance({ organizationId }: { organizationId?: string }) {
+export async function tool_getTransaction({ organizationId }: { organizationId?: string }) {
   // Get organizationId if not provided
   let orgId = organizationId;
   if (!orgId) {
@@ -104,9 +104,9 @@ export async function tool_getBalance({ organizationId }: { organizationId?: str
   }
 
   const tx = await prisma.transaction.findMany({ where: { organizationId: orgId } });
-  const income = tx.filter(t => t.type === "INCOME").reduce((a, t) => a + t.amount, 0);
-  const expense = tx.filter(t => t.type === "EXPENSE").reduce((a, t) => a + t.amount, 0);
-  return { income, expense, balance: income - expense };
+  const income = tx.filter((t:any) => t.type === "INCOME").reduce((a:number, t:any) => a + t.amount, 0);
+  const expense = tx.filter((t:any) => t.type === "EXPENSE").reduce((a:number, t:any) => a + t.amount, 0);
+  return { income, expense, balance: income - expense, transactions: tx };
 }
 
 export async function tool_addIncome({ 
