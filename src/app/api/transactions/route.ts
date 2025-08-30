@@ -4,20 +4,70 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const organizationId = searchParams.get("organizationId")!;
-  const tx = await prisma.transaction.findMany({ 
-    where: { organizationId }, 
-    orderBy: { occurredAt: "desc" },
-    include: {
-      createdBy: {
-        select: {
-          name: true
-        }
-      }
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-  });
-  return NextResponse.json(tx);
+
+    const { searchParams } = new URL(req.url);
+    const organizationId = searchParams.get("organizationId");
+    const year = searchParams.get("year");
+    const category = searchParams.get("category");
+    const type = searchParams.get("type");
+
+    if (!organizationId) {
+      return NextResponse.json({ error: "Organization ID is required" }, { status: 400 });
+    }
+
+    // Build where clause with filters
+    const whereClause: any = {
+      organizationId: organizationId,
+    };
+
+    // Add year filter
+    if (year) {
+      const startOfYear = new Date(`${year}-01-01T00:00:00.000Z`);
+      const endOfYear = new Date(`${year}-12-31T23:59:59.999Z`);
+      whereClause.occurredAt = {
+        gte: startOfYear,
+        lte: endOfYear,
+      };
+    }
+
+    // Add category filter (case-insensitive partial match)
+    if (category) {
+      whereClause.category = {
+        contains: category,
+        mode: 'insensitive',
+      };
+    }
+
+    // Add type filter
+    if (type && (type === 'INCOME' || type === 'EXPENSE')) {
+      whereClause.type = type;
+    }
+
+    const transactions = await prisma.transaction.findMany({
+      where: whereClause,
+      include: {
+        createdBy: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        occurredAt: "desc",
+      },
+    });
+
+    return NextResponse.json(transactions);
+  } catch (error) {
+    console.error("Error fetching transactions:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {

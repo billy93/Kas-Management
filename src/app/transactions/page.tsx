@@ -37,6 +37,14 @@ export default function TransactionsPage() {
     occurredAt: new Date().toISOString().split('T')[0],
     note: ""
   });
+  
+  // Filter states
+  const [filters, setFilters] = useState({
+    year: new Date().getFullYear().toString(),
+    category: "",
+    type: "" as "" | "INCOME" | "EXPENSE"
+  });
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -50,11 +58,23 @@ export default function TransactionsPage() {
     }
   }, [selectedOrganization, orgLoading]);
 
+  useEffect(() => {
+    if (selectedOrganization && !orgLoading) {
+      fetchTransactions();
+    }
+  }, [filters]);
+
   const fetchTransactions = async () => {
     if (!selectedOrganization) return;
     setLoading(true);
     try {
-      const response = await fetch(`/api/transactions?organizationId=${selectedOrganization.id}`);
+      const params = new URLSearchParams({
+        organizationId: selectedOrganization.id,
+        ...(filters.year && { year: filters.year }),
+        ...(filters.category && { category: filters.category }),
+        ...(filters.type && { type: filters.type })
+      });
+      const response = await fetch(`/api/transactions?${params}`);
       const data = await response.json();
       setTransactions(data);
     } catch (error) {
@@ -180,21 +200,90 @@ export default function TransactionsPage() {
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">💰 Transaksi Keuangan</h1>
-        <button
-          onClick={() => {
-            if (showForm) {
-              resetForm();
-            } else {
-              setShowForm(true);
-            }
-          }}
-          className="px-3 sm:px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200 font-medium text-sm sm:text-base"
-        >
-          {showForm ? "❌ Batal" : "➕ Tambah Transaksi"}
-        </button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="px-3 sm:px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors duration-200 font-medium text-sm sm:text-base"
+          >
+            {showFilters ? "🔍 Sembunyikan Filter" : "🔍 Filter"}
+          </button>
+          <button
+            onClick={() => {
+              if (showForm) {
+                resetForm();
+              } else {
+                setShowForm(true);
+              }
+            }}
+            className="px-3 sm:px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200 font-medium text-sm sm:text-base"
+          >
+            {showForm ? "❌ Batal" : "➕ Tambah Transaksi"}
+          </button>
+        </div>
       </div>
 
-
+      {/* Filter Section */}
+      {showFilters && (
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">🔍 Filter Transaksi</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tahun
+              </label>
+              <select
+                value={filters.year}
+                onChange={(e) => setFilters({ ...filters, year: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Semua Tahun</option>
+                {Array.from({ length: 10 }, (_, i) => {
+                  const year = new Date().getFullYear() - i;
+                  return (
+                    <option key={year} value={year.toString()}>
+                      {year}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Jenis Transaksi
+              </label>
+              <select
+                value={filters.type}
+                onChange={(e) => setFilters({ ...filters, type: e.target.value as "" | "INCOME" | "EXPENSE" })}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Semua Jenis</option>
+                <option value="INCOME">💰 Pemasukan</option>
+                <option value="EXPENSE">💸 Pengeluaran</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Kategori
+              </label>
+              <input
+                type="text"
+                value={filters.category}
+                onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Cari berdasarkan kategori..."
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex flex-col sm:flex-row gap-2">
+            <button
+              onClick={() => setFilters({ year: "", category: "", type: "" })}
+              className="px-3 sm:px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors duration-200 font-medium text-sm sm:text-base"
+            >
+              🔄 Reset Filter
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Add Transaction Form */}
       {showForm && (
