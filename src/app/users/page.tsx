@@ -28,6 +28,7 @@ function InviteModal({ isOpen, onClose, organizationName, organizationId, onInvi
   const [role, setRole] = useState("VIEWER");
   const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
 
   const validatePhoneNumber = (phone: string, code: string) => {
     if (!phone) return { isValid: true, formatted: null };
@@ -184,16 +185,6 @@ function InviteModal({ isOpen, onClose, organizationName, organizationId, onInvi
                 {phoneError}
               </p>
             )}
-            {phoneError && (
-              <p className="text-xs text-red-500 mt-1">
-                {phoneError}
-              </p>
-            )}
-            {phoneError && (
-              <p className="text-xs text-red-500 mt-1">
-                {phoneError}
-              </p>
-            )}
           </div>
           
           <div>
@@ -249,6 +240,28 @@ function CreateUserModal({ isOpen, onClose, organizationName, organizationId, on
   const [phoneError, setPhoneError] = useState("");
   const [role, setRole] = useState("VIEWER");
   const [loading, setLoading] = useState(false);
+
+  const validatePhoneNumber = (phone: string, code: string) => {
+    if (!phone) return { isValid: true, formatted: null };
+    
+    // Remove all non-digit characters
+    const digits = phone.replace(/\D/g, '');
+    if (!digits) return { isValid: true, formatted: null };
+    
+    // Validate Indonesian phone number format
+    if (code === '+62') {
+      // Indonesian mobile numbers should start with 8 and be 9-12 digits
+      if (!/^8\d{8,11}$/.test(digits)) {
+        return { 
+          isValid: false, 
+          formatted: null,
+          error: 'Nomor telepon Indonesia harus dimulai dengan 8 dan memiliki 9-12 digit'
+        };
+      }
+    }
+    
+    return { isValid: true, formatted: code + digits };
+  };
 
   const formatPhoneNumber = (phone: string, code: string) => {
     if (!phone) return null;
@@ -633,6 +646,28 @@ function EditUserModal({ user, isOpen, onClose, onUserUpdated }: EditUserModalPr
   const [countryCode, setCountryCode] = useState("+62");
   const [phoneError, setPhoneError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const validatePhoneNumber = (phone: string, code: string) => {
+    if (!phone) return { isValid: true, formatted: null };
+    
+    // Remove all non-digit characters
+    const digits = phone.replace(/\D/g, '');
+    if (!digits) return { isValid: true, formatted: null };
+    
+    // Validate Indonesian phone number format
+    if (code === '+62') {
+      // Indonesian mobile numbers should start with 8 and be 9-12 digits
+      if (!/^8\d{8,11}$/.test(digits)) {
+        return { 
+          isValid: false, 
+          formatted: null,
+          error: 'Nomor telepon Indonesia harus dimulai dengan 8 dan memiliki 9-12 digit'
+        };
+      }
+    }
+    
+    return { isValid: true, formatted: code + digits };
+  };
 
   useEffect(() => {
     if (user) {

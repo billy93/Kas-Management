@@ -120,11 +120,13 @@ export const authOptions: AuthOptions = {
     async jwt({ token, user, account }) {
       if (user) {
         token.uid = (user as any).id;
-        
-        // Check if user has organization memberships and is verified
+      }
+      
+      // Always check user memberships and role on every token refresh
+      if (token.email) {
         try {
           const userWithMemberships = await prisma.user.findUnique({
-            where: { email: user.email! },
+            where: { email: token.email },
             include: {
               memberships: {
                 include: {
@@ -136,6 +138,11 @@ export const authOptions: AuthOptions = {
 
           token.hasOrganizations = userWithMemberships?.memberships.length > 0;
           token.emailVerified = userWithMemberships?.emailVerified || false;
+          
+          // Store user role from first membership (assuming single org for now)
+          if (userWithMemberships?.memberships.length > 0) {
+            token.userRole = userWithMemberships.memberships[0].role;
+          }
         } catch (error) {
           console.error('Error checking memberships in JWT:', error);
           token.hasOrganizations = true; // Default to true on error
@@ -148,6 +155,7 @@ export const authOptions: AuthOptions = {
       (session as any).uid = token.uid;
       (session as any).hasOrganizations = token.hasOrganizations;
       (session as any).emailVerified = token.emailVerified;
+      (session as any).userRole = token.userRole;
       return session;
     },
     async redirect({ url, baseUrl }) {

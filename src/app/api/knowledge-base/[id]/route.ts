@@ -46,7 +46,7 @@ function chunkText(text: string, maxChunkSize: number = 1000): string[] {
 async function generateEmbedding(text: string): Promise<number[]> {
   try {
     const response = await openai.embeddings.create({
-      model: "text-embedding-3-large",
+      model: "text-embedding-3-small",
       input: text,
     });
     return response.data[0].embedding;

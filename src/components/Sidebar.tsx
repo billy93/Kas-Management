@@ -24,6 +24,15 @@ export default function Sidebar({ session, isMobileMenuOpen = false, onMobileMen
 
   // Filter menu categories based on user role
   const getMenuCategories = () => {
+    // For VIEWER, only show Chat in Tools category
+    if (userRole === 'VIEWER') {
+      return {
+        "Tools": [
+          { href: "/chat", label: "Chat", icon: "💬" },
+        ],
+      };
+    }
+
     const baseCategories: { [key: string]: { href: string; label: string; icon: string }[] } = {
       "Financial": [
         { href: "/dues", label: "Manajemen Iuran", icon: "📅" },
@@ -43,14 +52,6 @@ export default function Sidebar({ session, isMobileMenuOpen = false, onMobileMen
         { href: "/users", label: "Users", icon: "👤" },
         { href: "/user-member-link", label: "Link User-Member", icon: "🔗" },
         { href: "/organization", label: "Organization", icon: "🏢" },
-      ];
-    }
-
-    // For VIEWER, only show Reports from Financial
-    if (userRole === 'VIEWER') {
-      baseCategories["Financial"] = [
-        { href: "/dues", label: "Manajemen Iuran", icon: "📅" },
-        { href: "/reports", label: "Reports", icon: "📈" },
       ];
     }
 

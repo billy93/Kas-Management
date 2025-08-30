@@ -18,8 +18,11 @@ const PUBLIC_API_ROUTES = [
   '/api/onboarding'
 ];
 
+// Role-based permissions are now defined in main middleware
+
 export async function organizationMiddleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  console.log(`Middleware called for path: ${pathname}`);
   
   // Skip middleware for public pages and static assets
   if (PUBLIC_PAGES.some(page => pathname.startsWith(page))) {
@@ -63,6 +66,8 @@ export async function organizationMiddleware(request: NextRequest) {
       url.pathname = '/unauthorized';
       return NextResponse.redirect(url);
     }
+
+    // Role-based access control is now handled in main middleware
 
     // If hasOrganizations is undefined or true, allow access
     return NextResponse.next();
