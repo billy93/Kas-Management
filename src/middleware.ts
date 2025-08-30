@@ -19,7 +19,7 @@ export async function middleware(request: NextRequest) {
   
   // Allow access to public pages, all API routes, and static files
   const publicPages = ['/', '/unauthorized', '/api', '/onboarding'];
-  const staticFiles = ['/favicon.ico', '/favicon.svg', '/_next', '/public'];
+  const staticFiles = ['/favicon.ico', '/favicon.svg', '/_next', '/public', '/sw.js', '/manifest.json'];
   
   const isPublicPage = publicPages.some(page => {
     if (page === '/') {
